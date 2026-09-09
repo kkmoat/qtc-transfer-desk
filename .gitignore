@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.vercel/
+.env*
+!.env.example
+.DS_Store
+*.log
+*.tsbuildinfo
+coverage/
+test-results/
+playwright-report/
+crypto/target/
+crypto/pkg-web/
+*.pem
+*.key
+.vercel

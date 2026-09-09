@@ -1,0 +1,60 @@
+[package]
+name = "qp-rusty-crystals-dilithium"
+version = "4.1.1"
+edition = "2021"
+license = "GPL-3.0"
+description = "Pure Quantus RUST implementation of CRYSTALS-Dilithium digital signature scheme"
+readme = "README.md"
+homepage = "https://www.quantus.com"
+repository = "https://github.com/Quantus-Network/qp-rusty-crystals"
+keywords = [
+	"cryptography",
+	"dilithium",
+	"post-quantum",
+	"quantum",
+	"quantus-network",
+]
+categories = ["cryptography"]
+
+[[example]]
+name = "stack_usage_demo"
+path = "examples/stack_usage_demo.rs"
+
+[[example]]
+name = "stack_probe"
+path = "examples/stack_probe.rs"
+
+[[example]]
+name = "ct_bench"
+path = "examples/ct_bench.rs"
+# The harness times the crate-internal secret samplers, which are only exposed
+# via the `ct-internals` feature. Skip building this example without it.
+required-features = ["ct-internals"]
+
+[dependencies]
+zeroize = { workspace = true }
+
+[dev-dependencies]
+criterion = { version = "=0.5.1", features = ["html_reports"] }
+rand = { version = "=0.10.1", features = ["thread_rng"] }
+dudect-bencher = { version = "=0.7" }
+psm = "=0.1.31"
+qp-rusty-crystals-test-utils = { workspace = true }
+# NIST ACVP known-answer-test harness (tests only; does not affect the no_std lib).
+serde_json = "1"
+hex = "0.4"
+
+[[bench]]
+name = "dilithium_benchmarks"
+harness = false
+
+[features]
+default = ["ml-dsa-87"]
+# Public API modules for each FIPS 204 parameter set. Additive: enable any
+# combination so a single binary can verify (or sign) at multiple levels.
+ml-dsa-44 = []
+ml-dsa-65 = []
+ml-dsa-87 = []
+# Exposes the crate-internal secret samplers (`polyvec::ct_internals`) so the
+# `ct_bench` constant-time harness can time them directly. Not for production use.
+ct-internals = []

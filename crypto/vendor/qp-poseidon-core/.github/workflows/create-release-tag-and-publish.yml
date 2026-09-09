@@ -1,0 +1,168 @@
+name: Create Release Tag & Publish
+
+# Default least-privilege permissions for all jobs in this workflow.
+# Jobs that need write access (e.g. tag push, GitHub release) override
+# this with their own `permissions:` block.
+permissions:
+  contents: read
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_TERM_COLOR: always
+  CARGO_NET_RETRY: 10
+  CARGO_NET_TIMEOUT: 60
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  create-tag:
+    name: Create Tag
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'release-proposal')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.extract_version.outputs.version }}
+      is_draft: ${{ steps.extract_version.outputs.is_draft }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from PR title
+        id: extract_version
+        run: |
+          # Extract version from PR title (format: "ci: Automate version bump to vX.Y.Z")
+          VERSION=$(echo "${{ github.event.pull_request.title }}" | grep -o 'v[0-9]\+\.[0-9]\+\.[0-9]\+')
+          if [ -z "$VERSION" ]; then
+            echo "Error: Could not extract version from PR title: ${{ github.event.pull_request.title }}"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # Check if this is a draft release
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'draft-release') }}" == "true" ]]; then
+            echo "is_draft=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_draft=false" >> $GITHUB_OUTPUT
+          fi
+          echo "Extracted version: $VERSION"
+
+      - name: Create and push tag
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git tag -a "${{ steps.extract_version.outputs.version }}" -m "Release ${{ steps.extract_version.outputs.version }}"
+          git push origin "${{ steps.extract_version.outputs.version }}"
+
+  format-checks:
+    name: 🏁 Format Checks
+    needs: create-tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code at tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.create-tag.outputs.version }}
+
+      - uses: ./.github/actions/ubuntu
+
+      - name: Install taplo
+        run: cargo install taplo-cli --locked
+
+      - name: Run format checks
+        run: |
+          taplo format --check --config taplo.toml
+          cargo +nightly fmt --all -- --check
+
+  build-and-test:
+    name: 🛠️ Build & Test
+    needs: [create-tag, format-checks]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout code at tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.create-tag.outputs.version }}
+
+      - uses: ./.github/actions/ubuntu
+
+      - name: Cache cargo registry & target
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-release-${{ needs.create-tag.outputs.version }}-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-release-
+
+      - name: Build
+        run: cargo build --locked --release
+
+      - name: Test
+        run: cargo test --locked --release
+
+      - name: Run clippy (workspace, all targets, all features)
+        run: cargo clippy --workspace --all-targets --all-features --locked --release -- -D warnings
+
+      - name: Build docs (workspace)
+        run: cargo doc --workspace --locked --no-deps --all-features --release
+
+  create-github-release:
+    name: 🚀 Create GitHub Release
+    needs: [create-tag, build-and-test]
+    if: always() && needs.build-and-test.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.create-tag.outputs.version }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      # `cargo publish` needs the toolchain pinned in rust-toolchain.toml to be
+      # actually installed on the runner; the composite action handles that
+      # (rustup >=1.28 no longer auto-installs the active toolchain).
+      - uses: ./.github/actions/ubuntu
+
+      - name: Create GitHub Release (no binaries)
+        env:
+          GITHUB_TOKEN: ${{ secrets.ADMIN_PAT }}
+          NEW_VERSION: ${{ needs.create-tag.outputs.version }}
+        run: |
+          release_notes="Automated release for version $NEW_VERSION."
+          printf "%s" "$release_notes" > release_notes.txt
+
+          # Add draft flag if this is a draft release
+          if [[ "${{ needs.create-tag.outputs.is_draft }}" == "true" ]]; then
+            DRAFT_FLAG="--draft"
+          else
+            DRAFT_FLAG=""
+          fi
+
+          echo "Creating release with DRAFT_FLAG: $DRAFT_FLAG"
+
+          gh release create "$NEW_VERSION" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Quantus qp-poseidon - $NEW_VERSION" \
+            --notes-file release_notes.txt \
+            --target main \
+            $DRAFT_FLAG
+
+      - name: Publish qp-poseidon-core to crates.io
+        run: cargo publish --package qp-poseidon-core --token ${{ secrets.CARGO_REGISTRY_TOKEN }} --allow-dirty
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

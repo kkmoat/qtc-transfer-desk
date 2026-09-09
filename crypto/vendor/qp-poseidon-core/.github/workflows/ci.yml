@@ -1,0 +1,200 @@
+---
+name: Continuous Integration
+
+on:
+  pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+      - "LICENSE"
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+      - "LICENSE"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Principle of least privilege: all jobs only read the repo (checkout + cargo).
+# Per-job override is unnecessary because no job pushes, creates releases or PRs.
+permissions:
+  contents: read
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_TERM_COLOR: always
+  CARGO_NET_RETRY: 10
+  CARGO_NET_TIMEOUT: 60
+
+jobs:
+  fast-checks:
+    name: 🏁 Fast Checks (Format)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/ubuntu
+      - name: Install taplo
+        run: cargo install taplo-cli --locked
+      - name: Run format checks
+        run: |
+          taplo format --check --config taplo.toml
+          cargo +nightly fmt --all -- --check
+
+  build-and-test-matrix:
+    name: 🛠️ Build & Test Matrix
+    needs: fast-checks
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup Ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        uses: ./.github/actions/ubuntu
+      - name: Setup macOS
+        if: matrix.os == 'macos-latest'
+        uses: ./.github/actions/macos
+      - name: Cache cargo registry & target
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-
+      - name: Build
+        run: cargo build --locked --release
+      - name: Test
+        run: cargo test --locked --release
+
+  analysis:
+    name: 🤖 Analysis (Clippy & Doc)
+    needs: fast-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/ubuntu
+      - name: Cache cargo registry & target
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-analysis-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-analysis-
+      - name: Run clippy (workspace, all targets, all features)
+        run: cargo clippy --workspace --all-targets --all-features --locked --release -- -D warnings
+      - name: Generate documentation (workspace)
+        run: cargo doc --workspace --locked --no-deps --all-features --release
+
+  formal-spec:
+    name: 📐 Formal Spec (Lean)
+    needs: fast-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      # Builds the Lean 4 formal spec under `formal/`: machine-checked proofs that
+      # the hand-optimized Goldilocks arithmetic in `src/goldilocks.rs` (overflow
+      # tricks, NEG_ORDER corrections, `assume` UB-hints, reduce128) is correct
+      # mod p on the full non-canonical u64 range. The package is deliberately
+      # mathlib-free and builds in seconds; `lake build` type-checks every proof
+      # in the kernel, so an edit that breaks a proof fails CI instead of rotting
+      # silently. elan/lake are installed from `formal/lean-toolchain` (Lean v4.30).
+      #
+      # Defense-in-depth: `leanchecker` re-checks the compiled environment with an
+      # independent kernel checker (bundled on v4.30).
+      - name: Build formal spec (lake build)
+        # Pinned to a full commit SHA (supply-chain hardening). 38fbc41 == v1.5.0.
+        uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9 # v1.5.0
+        with:
+          lake-package-directory: "formal"
+          use-mathlib-cache: "false"
+          leanchecker: "true"
+      # No-`sorry` gate: the spec must stay gap-free. Fail if any proof term uses a
+      # `sorry`/`admit`/`sorryAx` placeholder. (Keep the literal words out of
+      # comments/strings under `formal/` so this stays a clean signal.)
+      - name: Assert the spec contains no sorry/admit
+        run: |
+          if grep -rEn '\b(sorry|admit|sorryAx)\b' --include='*.lean' formal --exclude-dir=.lake; then
+            echo "::error::formal spec contains a sorry/admit placeholder"
+            exit 1
+          fi
+      # Axiom-footprint gate: both capstones — `goldilocks_tier1` (functional
+      # congruence + closure) and `goldilocks_tier1_safety` (no-UB/no-wrap) —
+      # must depend on exactly the standard Lean axioms: no placeholder axiom,
+      # no `Lean.ofReduceBool` (native evaluation), no stray `axiom`
+      # declarations anywhere in their proof trees. Together the two theorems
+      # bundle every claim the spec makes, so this covers the whole package.
+      - name: Assert capstone axiom footprints
+        run: |
+          set -euo pipefail
+          cd formal
+          output=$(lake env lean ci/AxiomsCheck.lean 2>&1)
+          printf '%s\n' "$output"
+          expected=$(printf '%s\n' \
+            'propext' \
+            'Classical.choice' \
+            'Quot.sound' | sort)
+          for thm in goldilocks_tier1 goldilocks_tier1_safety; do
+            line=$(grep "'GoldilocksSpec.${thm}' depends on axioms" <<< "$output" || true)
+            if [ -z "$line" ]; then
+              echo "::error::could not read #print axioms for GoldilocksSpec.${thm}"
+              exit 1
+            fi
+            axioms=$(sed 's/.*\[\(.*\)\].*/\1/' <<< "$line" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$' | sort)
+            if [ "$axioms" != "$expected" ]; then
+              echo "::error::${thm} axiom footprint mismatch"
+              echo "expected exactly:"
+              printf '  %s\n' "$expected"
+              echo "got:"
+              printf '  %s\n' "$axioms"
+              exit 1
+            fi
+          done
+
+  security-audit:
+    name: 🔐 Security Audit (non-blocking)
+    needs: fast-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache cargo-audit binary
+        uses: actions/cache@v5
+        with:
+          path: ~/.cargo/bin/cargo-audit
+          key: cargo-audit-bin-${{ runner.os }}-0.22.1
+      - name: Cache RustSec advisory database
+        uses: actions/cache@v5
+        with:
+          path: ~/.cargo/advisory-db
+          key: cargo-advisory-db-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            cargo-advisory-db-${{ runner.os }}-
+      - name: Install cargo-audit
+        run: |
+          if ! command -v cargo-audit >/dev/null 2>&1; then
+            cargo install cargo-audit --locked --version 0.22.1
+          fi
+      - name: Run cargo audit (informational only)
+        # Only this step is non-blocking — every other step in this job
+        # (checkout, caches, cargo-audit install) must fail loudly so we
+        # don't silently skip the audit.
+        continue-on-error: true
+        run: cargo audit

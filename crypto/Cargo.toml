@@ -1,0 +1,24 @@
+[package]
+name = "quantus-browser-crypto"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-only"
+description = "Browser-local Quantus account derivation and runtime-152 signing using official primitives"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+qp-rusty-crystals-dilithium = { version = "=4.1.1", default-features = false, features = ["ml-dsa-65", "ml-dsa-87"] }
+qp-rusty-crystals-hdwallet = { version = "=4.1.1", default-features = false, features = ["ml-dsa-65", "ml-dsa-87"] }
+qp-poseidon-core = { version = "=3.1.0", default-features = false }
+wasm-bindgen = "=0.2.114"
+zeroize = { version = "=1.8.2", features = ["alloc"] }
+blake2 = "=0.10.6"
+bs58 = "=0.5.1"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"

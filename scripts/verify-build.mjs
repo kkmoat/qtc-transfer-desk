@@ -1,0 +1,38 @@
+import assert from 'node:assert/strict';
+import { readFile, readdir } from 'node:fs/promises';
+import { join } from 'node:path';
+import { DOCUMENT_CSP, META_CSP, WORKER_CSP, SECURITY_HEADERS } from './security-policy.mjs';
+import { verifyCrypto } from './verify-crypto.mjs';
+
+const html = await readFile('dist/index.html', 'utf8');
+const htmlDecoded = html.replaceAll('&#39;', "'").replaceAll('&quot;', '"').replaceAll('&amp;', '&');
+assert(htmlDecoded.includes(META_CSP), 'Production HTML must contain the intended CSP');
+const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+assert(scripts.length > 0, 'Expected an external application script');
+for (const [, attributes, body] of scripts) {
+  assert(/\bsrc="\/assets\/[^"<>]+\.js"/.test(attributes), 'Only same-origin bundled scripts are allowed');
+  assert.equal(body.trim(), '', 'Inline JavaScript is not allowed');
+}
+assert(!/\bon\w+\s*=/i.test(html), 'Inline event handlers are not allowed');
+assert(!DOCUMENT_CSP.includes("script-src 'self' 'unsafe-inline'"));
+assert(!DOCUMENT_CSP.includes("'unsafe-eval'"));
+const config = JSON.parse(await readFile('vercel.json', 'utf8'));
+assert.equal(config.framework, 'vite');
+assert.equal(config.outputDirectory, 'dist');
+assert(!config.functions && !config.rewrites && !config.routes, 'Deployment must remain static');
+assert.deepEqual(config.headers.find(rule => rule.source === '/(.*)').headers, SECURITY_HEADERS);
+const workerHeaders = config.headers.find(rule => rule.source === '/crypto/worker.js').headers;
+assert(workerHeaders.some(header => header.key === 'Content-Security-Policy' && header.value === WORKER_CSP));
+
+async function auditFiles(directory) {
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    assert(!entry.name.startsWith('.'), `Hidden deployment artifact: ${entry.name}`);
+    assert(!/\.(map|pem|key|log)$/i.test(entry.name), `Unexpected deployment artifact: ${entry.name}`);
+    assert(!['node_modules', 'api', 'functions', 'server'].includes(entry.name), `Unexpected server artifact: ${entry.name}`);
+    if (entry.isDirectory()) await auditFiles(join(directory, entry.name));
+  }
+}
+await auditFiles('dist');
+await verifyCrypto('dist');
+assert.equal(await readFile('dist/crypto/worker.js', 'utf8'), await readFile('public/crypto/worker.js', 'utf8'));
+console.log('Static production build verified: external scripts, CSP, isolated Worker policy, crypto checksums and no server/secret artifacts.');

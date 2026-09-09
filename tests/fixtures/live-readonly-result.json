@@ -1,0 +1,50 @@
+[
+  {
+    "scheme": "ml-dsa-65",
+    "address": "qzoyC4eRTrexYoutXABVsf61QJZxJim3iWvayRQwEjXWgA4mw",
+    "hash": "0x94f65d2a179073ce3700c561e6dd0ca0b17d942bf76dc670095d67d22d45d7cf",
+    "fee": "9580354526",
+    "spec": 152,
+    "localSignatureVerified": true,
+    "simulation": {
+      "raw": "0x010001",
+      "decoded": {
+        "Err": {
+          "Invalid": "Payment"
+        }
+      }
+    },
+    "corrupt": {
+      "raw": "0x010004",
+      "decoded": {
+        "Err": {
+          "Invalid": "BadProof"
+        }
+      }
+    }
+  },
+  {
+    "scheme": "ml-dsa-87",
+    "address": "qzm5QCox8Dp5A3oSXZZYHD8YoYgPz7enykZb6RPUropdCyN5h",
+    "hash": "0x7ae1a9a6b5c0c31b594f91d8abfff177cc70b71f403f2c77d4f1ea4f42292814",
+    "fee": "11538354526",
+    "spec": 152,
+    "localSignatureVerified": true,
+    "simulation": {
+      "raw": "0x010001",
+      "decoded": {
+        "Err": {
+          "Invalid": "Payment"
+        }
+      }
+    },
+    "corrupt": {
+      "raw": "0x010004",
+      "decoded": {
+        "Err": {
+          "Invalid": "BadProof"
+        }
+      }
+    }
+  }
+]

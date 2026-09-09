@@ -1,0 +1,12 @@
+/.git/
+/node_modules/
+/dist/
+.env*
+/crypto/
+/.gitignore
+/.github/
+/tests/
+/README.md
+/SECURITY.md
+/LICENSE
+/THIRD_PARTY_NOTICES.md
