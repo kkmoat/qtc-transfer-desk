@@ -4,6 +4,7 @@
 
 本项目是独立社区工具，**不是 Quantus 官方钱包，未经独立安全审计**。开源、本地签名和安全响应头能够帮助审查与降低部分风险，不能保证设备、浏览器、依赖或托管页面绝对安全。使用前请阅读 [安全说明](SECURITY.md)。
 
+- 在线使用：[qtc-transfer-desk.vercel.app](https://qtc-transfer-desk.vercel.app/)
 - 源码：[github.com/kkmoat/qtc-transfer-desk](https://github.com/kkmoat/qtc-transfer-desk)
 - 作者：[X · @kkmoat](https://x.com/kkmoat)
 - 链上查询：[Quantus 区块浏览器](https://explorer.quantus.com/)
