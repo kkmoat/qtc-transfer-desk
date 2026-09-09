@@ -71,6 +71,8 @@ npm run preview
 
 运行本项目不需要 API 密钥、服务端钱包、数据库或 `.env` 私钥配置。
 
+部署完成后，可在仓库 Actions 中手动运行检查并打开 `verify_deployment`，核对生产站点的匿名访问、HTTP 安全响应头、每个静态文件的 SHA-256 及官方 RPC 的浏览器跨域配置。也可在完成 `npm run build` 后运行 `node scripts/verify-deployment.mjs`。该检查不导入钱包、不提交交易；它要求线上部署与所选提交一致。
+
 ## 部署到 Vercel
 
 1. Fork 本仓库，在 Vercel 中导入自己的 GitHub 仓库。
