@@ -71,7 +71,9 @@ npm run preview
 
 运行本项目不需要 API 密钥、服务端钱包、数据库或 `.env` 私钥配置。
 
-部署完成后，可在仓库 Actions 中手动运行检查并打开 `verify_deployment`，核对生产站点的匿名访问、HTTP 安全响应头、每个静态文件的 SHA-256 及官方 RPC 的浏览器跨域配置。也可在完成 `npm run build` 后运行 `node scripts/verify-deployment.mjs`。该检查不导入钱包、不提交交易；它要求线上部署与所选提交一致。
+部署完成后，可在仓库 Actions 中手动运行检查并打开 `verify_deployment`，核对生产站点的匿名访问、HTTP 安全响应头和每个静态文件的 SHA-256。也可在完成 `npm run build` 后运行 `node scripts/verify-deployment.mjs`。该检查不导入钱包、不提交交易；它要求线上部署与所选提交一致。
+
+官方 RPC 的连通性与访问来源有关，与本站静态文件校验分开检查：运行 `node scripts/verify-deployment.mjs --rpc-only`，验证当前网络下两个节点对网站来源的跨域预检和公开查询。也可加 `--with-rpc` 一并检查。第三方节点可能对数据中心或某些网络限制请求；本站不会为绕过节点限制而把签名功能移到服务器。
 
 ## 部署到 Vercel
 

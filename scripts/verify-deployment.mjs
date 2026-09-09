@@ -5,7 +5,9 @@ import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { DOCUMENT_CSP, WORKER_CSP, RPC_ORIGINS } from './security-policy.mjs';
 
-const origin = new URL(process.argv[2] ?? 'https://qtc-transfer-desk.vercel.app');
+const rpcOnly = process.argv.includes('--rpc-only');
+const withRpc = rpcOnly || process.argv.includes('--with-rpc');
+const origin = new URL(process.argv.find(value => value.startsWith('https://')) ?? 'https://qtc-transfer-desk.vercel.app');
 assert.equal(origin.protocol, 'https:');
 assert.equal(origin.pathname, '/');
 assert(!origin.username && !origin.password && !origin.search && !origin.hash);
@@ -33,18 +35,27 @@ async function verifyDirectory(directory, prefix = '') {
   }
 }
 
-await verifyDirectory('dist');
-for (const route of ['/api/sign', '/.env.local', '/.git/config']) {
-  const response = await request(new URL(route, origin));
-  assert([403, 404].includes(response.status), `Unexpected exposed route: ${route}`);
-  console.log(`Unavailable as expected: ${route} (${response.status})`);
+if (!rpcOnly) {
+  await verifyDirectory('dist');
+  for (const route of ['/api/sign', '/.env.local', '/.git/config']) {
+    const response = await request(new URL(route, origin));
+    assert([403, 404].includes(response.status), `Unexpected exposed route: ${route}`);
+    console.log(`Unavailable as expected: ${route} (${response.status})`);
+  }
+  console.log('Public static deployment verified without wallet credentials or transaction submission.');
 }
-for (const endpoint of RPC_ORIGINS) {
+if (withRpc) for (const endpoint of RPC_ORIGINS) {
   const response = await request(endpoint, { method: 'OPTIONS', headers: { Origin: origin.origin, 'Access-Control-Request-Method': 'POST', 'Access-Control-Request-Headers': 'content-type' } });
-  assert(response.ok, `RPC preflight failed: ${endpoint}`);
+  assert(response.ok, `RPC preflight failed: ${endpoint} (HTTP ${response.status})`);
   assert(['*', origin.origin].includes(response.headers.get('access-control-allow-origin')), `RPC does not permit this browser origin: ${endpoint}`);
-  assert(/post/i.test(response.headers.get('access-control-allow-methods') ?? ''));
+  assert(/post|\*/i.test(response.headers.get('access-control-allow-methods') ?? ''));
   assert(/content-type|\*/i.test(response.headers.get('access-control-allow-headers') ?? ''));
-  console.log(`Verified browser RPC CORS: ${endpoint}`);
+  const rpc = await request(endpoint, { method: 'POST', headers: { Origin: origin.origin, 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'system_properties', params: [] }) });
+  assert(rpc.ok, `RPC public query failed: ${endpoint} (HTTP ${rpc.status})`);
+  assert(['*', origin.origin].includes(rpc.headers.get('access-control-allow-origin')));
+  const result = await rpc.json();
+  assert.equal(result.id, 1);
+  assert.equal(result.result.tokenSymbol, 'QTC');
+  assert.equal(result.result.tokenDecimals, 12);
+  console.log(`Verified browser RPC CORS and public query: ${endpoint}`);
 }
-console.log('Public deployment verified without wallet credentials or transaction submission.');
