@@ -17,6 +17,12 @@ assert(!/\bon\w+\s*=/i.test(html), 'Inline event handlers are not allowed');
 assert(!DOCUMENT_CSP.includes("script-src 'self' 'unsafe-inline'"));
 assert(!DOCUMENT_CSP.includes("'unsafe-eval'"));
 const config = JSON.parse(await readFile('vercel.json', 'utf8'));
+const lock = JSON.parse(await readFile('package-lock.json', 'utf8'));
+assert.equal(lock.version, '1.0.0');
+for (const [path, dependency] of Object.entries(lock.packages)) {
+  assert(path === '' || path.startsWith('node_modules/'), `Nonportable dependency path: ${path}`);
+  if (dependency.resolved) assert(dependency.resolved.startsWith('https://registry.npmjs.org/'), `Unexpected dependency source: ${path}`);
+}
 assert.equal(config.framework, 'vite');
 assert.equal(config.outputDirectory, 'dist');
 assert(!config.functions && !config.rewrites && !config.routes, 'Deployment must remain static');
