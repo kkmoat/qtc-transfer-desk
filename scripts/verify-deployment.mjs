@@ -7,7 +7,7 @@ import { DOCUMENT_CSP, WORKER_CSP, RPC_ORIGINS } from './security-policy.mjs';
 
 const rpcOnly = process.argv.includes('--rpc-only');
 const withRpc = rpcOnly || process.argv.includes('--with-rpc');
-const origin = new URL(process.argv.find(value => value.startsWith('https://')) ?? 'https://qtc-transfer-desk.vercel.app');
+const origin = new URL(process.argv.find(value => value.startsWith('https://')) ?? 'https://www.qtc-transfer.xyz');
 assert.equal(origin.protocol, 'https:');
 assert.equal(origin.pathname, '/');
 assert(!origin.username && !origin.password && !origin.search && !origin.hash);
