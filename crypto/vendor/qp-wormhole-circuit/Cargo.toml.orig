@@ -1,0 +1,32 @@
+[package]
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+name = "qp-wormhole-circuit"
+readme = "README.md"
+version.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+hex = { workspace = true, features = ["alloc"] }
+qp-plonky2 = { workspace = true }
+qp-wormhole-inputs = { version = "=4.3.0", default-features = false }
+zeroize = { workspace = true }
+zk-circuits-common = { package = "qp-zk-circuits-common", version = "=4.3.0", default-features = false }
+
+[features]
+default = ["std"]
+profile = ["qp-plonky2/rand", "qp-plonky2/timing", "std"]
+std = [
+	"anyhow/std",
+	"qp-plonky2/std",
+	"qp-wormhole-inputs/std",
+	"zk-circuits-common/std",
+]
+
+[dev-dependencies]
+env_logger = "=0.11.9"
+
+[lints]
+workspace = true

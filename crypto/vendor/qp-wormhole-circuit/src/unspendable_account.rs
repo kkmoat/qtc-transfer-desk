@@ -1,0 +1,278 @@
+use alloc::vec::Vec;
+
+use plonky2::{
+    hash::{hash_types::HashOutTarget, poseidon2::Poseidon2Hash},
+    iop::witness::{PartialWitness, WitnessWrite},
+    plonk::{circuit_builder::CircuitBuilder, config::Hasher},
+};
+
+use zeroize::Zeroizing;
+
+use crate::inputs::CircuitInputs;
+use crate::sensitive::SensitiveFelts;
+use zk_circuits_common::circuit::{CircuitFragment, D, F};
+use zk_circuits_common::utils::{
+    bytes_to_digest, digest_to_bytes, string_to_felts, BytesDigest, Digest, DIGEST_BYTES_LEN,
+    POSEIDON2_OUTPUT,
+};
+
+/// Number of field elements for the secret (32 bytes with 8 bytes/felt encoding)
+pub const SECRET_NUM_TARGETS: usize = POSEIDON2_OUTPUT; // 4
+/// Number of field elements for the account ID (4 felts, 8 bytes/felt for hash output)
+pub const ACCOUNT_ID_NUM_TARGETS: usize = POSEIDON2_OUTPUT; // 4
+/// Number of field elements for the preimage (salt 3 + secret 4)
+pub const PREIMAGE_NUM_TARGETS: usize = 7;
+pub const UNSPENDABLE_SALT: &str = "wormhole";
+
+/// The spend secret, zeroized on drop (shared with `nullifier` and
+/// `PrivateCircuitInputs`; see [`crate::sensitive`]).
+pub use crate::sensitive::Secret;
+
+/// Move-only (no `Clone`): holds the spend [`Secret`], which cannot be
+/// silently duplicated.
+#[derive(PartialEq, Eq)]
+pub struct UnspendableAccount {
+    /// Account ID as 4 field elements (8 bytes/felt for hash output)
+    pub account_id: Digest,
+    /// Secret encoded as 4 field elements (8 bytes/felt for 32 bytes)
+    pub secret: Secret,
+}
+
+/// Redacting `Debug`: `secret` is the spend credential, and `account_id` is
+/// the unspendable deposit account — the direct deposit/withdrawal link that
+/// `PrivateCircuitInputs` redacts as `unspendable_account`. Neither may reach
+/// logs, error contexts, or telemetry via `{:?}`.
+impl core::fmt::Debug for UnspendableAccount {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("UnspendableAccount")
+            .field("account_id", &"[REDACTED]")
+            .field("secret", &"[REDACTED]")
+            .finish()
+    }
+}
+
+impl UnspendableAccount {
+    pub fn new(account_id: BytesDigest, secret: BytesDigest) -> Self {
+        // Account ID uses 8 bytes/felt encoding (hash output)
+        let account_id = bytes_to_digest(account_id);
+        // Secret uses 8 bytes/felt encoding.
+        let secret = bytes_to_digest(secret).into();
+        Self { account_id, secret }
+    }
+
+    pub fn from_secret(secret: BytesDigest) -> Self {
+        // Use 8 bytes/felt encoding for secrets.
+        let secret_felts = bytes_to_digest(secret);
+
+        // Build preimage: salt + secret. Full capacity up front: growing
+        // after the secret is written would reallocate and free the old block
+        // unscrubbed. The scrubbing wrapper then zeroizes the buffer once
+        // hashing is done.
+        let mut preimage = Vec::with_capacity(PREIMAGE_NUM_TARGETS);
+        preimage.extend(
+            string_to_felts(UNSPENDABLE_SALT).expect("UNSPENDABLE_SALT within serialization cap"),
+        );
+        preimage.extend(&secret_felts);
+        let preimage = SensitiveFelts::new(preimage);
+
+        if preimage.len() != PREIMAGE_NUM_TARGETS {
+            panic!(
+                "Expected preimage to be {} field elements, got {}",
+                PREIMAGE_NUM_TARGETS,
+                preimage.len()
+            );
+        }
+
+        // Hash twice to get the account id hash (4 felts).
+        let inner_hash = Poseidon2Hash::hash_no_pad(&preimage).elements;
+        let outer_hash = Poseidon2Hash::hash_no_pad(&inner_hash).elements;
+
+        Self {
+            account_id: outer_hash,
+            secret: secret_felts.into(),
+        }
+    }
+
+    /// Serialize including the spend secret.
+    ///
+    /// Returns a [`Zeroizing`] buffer so the exposed secret is scrubbed when
+    /// the caller drops it. Do not copy the contents into logs, error
+    /// contexts, or persistent storage.
+    pub fn to_bytes(&self) -> Zeroizing<Vec<u8>> {
+        // Full capacity up front: growing after the secret is written would
+        // reallocate and free the old block unscrubbed.
+        let mut bytes = Vec::with_capacity(2 * DIGEST_BYTES_LEN);
+        bytes.extend(*digest_to_bytes(self.account_id));
+        bytes.extend(*digest_to_bytes(self.secret.expose_felts()));
+        Zeroizing::new(bytes)
+    }
+
+    pub fn from_bytes(slice: &[u8]) -> anyhow::Result<Self> {
+        let account_id_size = 32; // 32 bytes for account ID
+        let secret_size = 32; // 32 bytes for secret
+        let total_size = account_id_size + secret_size;
+
+        if slice.len() != total_size {
+            return Err(anyhow::anyhow!(
+                "Expected {} bytes for UnspendableAccount, got: {}",
+                total_size,
+                slice.len()
+            ));
+        }
+
+        // Deserialize account_id (32 bytes -> 4 field elements, 8 bytes/felt)
+        let account_id_bytes: BytesDigest = slice[..account_id_size]
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("Failed to deserialize unspendable account id"))?;
+        let account_id = bytes_to_digest(account_id_bytes);
+
+        // Deserialize secret (32 bytes -> 4 field elements, 8 bytes/felt)
+        let secret_bytes: BytesDigest = slice[account_id_size..total_size]
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("Failed to deserialize unspendable account secret"))?;
+        let secret = bytes_to_digest(secret_bytes).into();
+
+        Ok(Self { account_id, secret })
+    }
+
+    /// Serialize including the spend secret.
+    ///
+    /// Returns [`SensitiveFelts`] so the exposed secret is scrubbed when the
+    /// caller drops it. Do not copy the contents into logs, error contexts,
+    /// or persistent storage.
+    pub fn to_field_elements(&self) -> SensitiveFelts {
+        // Full capacity up front: growing after the secret is written would
+        // reallocate and free the old block unscrubbed.
+        let mut elements = Vec::with_capacity(ACCOUNT_ID_NUM_TARGETS + SECRET_NUM_TARGETS);
+        elements.extend(self.account_id);
+        elements.extend(self.secret.expose_felts());
+        SensitiveFelts::new(elements)
+    }
+
+    pub fn from_field_elements(elements: &[F]) -> anyhow::Result<Self> {
+        // Expected sizes
+        let account_id_size = ACCOUNT_ID_NUM_TARGETS; // 4
+        let secret_size = SECRET_NUM_TARGETS; // 4
+        let total_size = account_id_size + secret_size;
+
+        if elements.len() != total_size {
+            return Err(anyhow::anyhow!(
+                "Expected {} field elements for UnspendableAccount, got: {}",
+                total_size,
+                elements.len()
+            ));
+        }
+
+        // Deserialize account_id (4 field elements)
+        let account_id: Digest = elements[..account_id_size]
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("Failed to deserialize unspendable account id"))?;
+
+        // Deserialize secret (4 field elements)
+        let secret_felts: Digest = elements[account_id_size..total_size]
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("Failed to deserialize unspendable account secret"))?;
+        let secret = Secret::from(secret_felts);
+
+        Ok(Self { account_id, secret })
+    }
+}
+
+impl From<&CircuitInputs> for UnspendableAccount {
+    fn from(inputs: &CircuitInputs) -> Self {
+        // Explicit, transient duplication of the secret: it is immediately
+        // felt-encoded into `self.secret`, which scrubs itself on drop.
+        Self::new(
+            inputs.private.unspendable_account,
+            inputs.private.secret.expose_digest(),
+        )
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct UnspendableAccountTargets {
+    /// Account ID as 4 targets (8 bytes/felt for hash output)
+    pub account_id: HashOutTarget,
+    /// Secret targets (4 field elements with 8 bytes/felt encoding)
+    pub secret: HashOutTarget,
+}
+
+impl UnspendableAccountTargets {
+    pub fn new(builder: &mut CircuitBuilder<F, D>) -> Self {
+        Self {
+            account_id: builder.add_virtual_hash(),
+            secret: builder.add_virtual_hash(),
+        }
+    }
+}
+
+impl CircuitFragment for UnspendableAccount {
+    type Targets = UnspendableAccountTargets;
+
+    /// Builds a circuit that asserts that the `account_id` was generated from `H(H(salt+secret))`.
+    ///
+    /// The circuit computes the hash (4 felts) and directly compares with account_id (also 4 felts).
+    fn circuit(
+        Self::Targets { account_id, secret }: &Self::Targets,
+        builder: &mut CircuitBuilder<F, D>,
+    ) {
+        let salt =
+            string_to_felts(UNSPENDABLE_SALT).expect("UNSPENDABLE_SALT within serialization cap");
+        let mut preimage = Vec::new();
+        for felt in salt {
+            preimage.push(builder.constant(felt));
+        }
+        preimage.extend(secret.elements.iter());
+
+        // Compute the hash by double-hashing the preimage (salt + secret).
+        // Result is 4 field elements (HashOut).
+        let inner_hash = builder.hash_n_to_hash_no_pad_p2::<Poseidon2Hash>(preimage.clone());
+        let outer_hash =
+            builder.hash_n_to_hash_no_pad_p2::<Poseidon2Hash>(inner_hash.elements.to_vec());
+
+        // Assert that the computed hash matches the provided account_id (both are 4 felts)
+        for i in 0..4 {
+            builder.connect(outer_hash.elements[i], account_id.elements[i]);
+        }
+    }
+
+    fn fill_targets(
+        &self,
+        pw: &mut PartialWitness<F>,
+        targets: Self::Targets,
+    ) -> anyhow::Result<()> {
+        pw.set_hash_target(targets.account_id, self.account_id.into())?;
+        pw.set_hash_target(targets.secret, self.secret.expose_felts().into())?;
+
+        Ok(())
+    }
+}
+
+// NOTE: deliberately NO `Default` impl. The secret is the private credential
+// that authorizes claiming funds sent to the derived account; an earlier
+// `Default` embedded a fixed secret in source, so any production caller that
+// reached for `UnspendableAccount::default()` created an account anyone could
+// drain. Constructing an account must always require an explicit secret
+// (`from_secret`) or an explicit (account_id, secret) pair (`new`).
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The account id is the unspendable deposit account, which
+    /// `PrivateCircuitInputs` redacts as the direct deposit/withdrawal link.
+    /// The secret is the spend credential. Neither may appear in Debug output.
+    #[test]
+    fn unspendable_account_debug_redacts_account_id_and_secret() {
+        let account = UnspendableAccount::new(
+            BytesDigest::try_from([0xCD; 32].as_slice()).unwrap(),
+            BytesDigest::try_from([0xAB; 32].as_slice()).unwrap(),
+        );
+        let dump = alloc::format!("{:?}", account);
+        assert!(dump.contains("[REDACTED]"));
+        // account_id felts: each 8-byte chunk of [0xCD; 32].
+        assert!(!dump.contains("14829735431805717965"));
+        // secret felts: each 8-byte chunk of [0xAB; 32].
+        assert!(!dump.contains("12370169555311111083"));
+    }
+}

@@ -1,0 +1,270 @@
+#[cfg(not(feature = "std"))]
+use alloc::{vec, vec::Vec};
+
+use hashbrown::HashSet;
+use qp_plonky2_core::field::polynomial::PolynomialCoeffs;
+use qp_plonky2_core::fri_proof::{CompressedFriProof, FriProof};
+use qp_plonky2_core::fri_verifier::{
+    compute_evaluation, fri_combine_initial, PrecomputedReducedOpenings,
+};
+use qp_plonky2_core::merkle_tree::MerkleCap;
+use qp_plonky2_core::{
+    validate_fri_initial_proof_shape, Challenger, FriChallenger, FriChallenges, FriParamsObserve,
+};
+
+use crate::field::extension::Extendable;
+use crate::hash::hash_types::RichField;
+use crate::plonk::circuit_data::CommonCircuitData;
+use crate::plonk::config::{GenericConfig, Hasher};
+use crate::plonk::proof::{
+    CompressedProof, CompressedProofWithPublicInputs, FriInferredElements, OpeningSet, Proof,
+    ProofChallenges, ProofWithPublicInputs,
+};
+use crate::util::reverse_bits;
+
+fn get_challenges<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
+    public_inputs_hash: <<C as GenericConfig<D>>::InnerHasher as Hasher<F>>::Hash,
+    wires_cap: &MerkleCap<F, C::Hasher>,
+    plonk_zs_partial_products_cap: &MerkleCap<F, C::Hasher>,
+    quotient_polys_cap: &MerkleCap<F, C::Hasher>,
+    openings: &OpeningSet<F, D>,
+    commit_phase_merkle_caps: &[MerkleCap<F, C::Hasher>],
+    final_poly: &PolynomialCoeffs<F::Extension>,
+    pow_witness: F,
+    circuit_digest: &<<C as GenericConfig<D>>::Hasher as Hasher<C::F>>::Hash,
+    common_data: &CommonCircuitData<F, D>,
+) -> anyhow::Result<ProofChallenges<F, D>> {
+    let config = &common_data.config;
+    let num_challenges = config.num_challenges;
+
+    let mut challenger = Challenger::<F, C::Hasher>::new();
+    let has_lookup = common_data.num_lookup_polys != 0;
+
+    // Observe the FRI config
+    common_data.fri_params.observe(&mut challenger);
+
+    // Observe the instance.
+    challenger.observe_hash::<C::Hasher>(*circuit_digest);
+    challenger.observe_hash::<C::InnerHasher>(public_inputs_hash);
+
+    challenger.observe_cap::<C::Hasher>(wires_cap);
+    let plonk_betas = challenger.get_n_challenges(num_challenges);
+    let plonk_gammas = challenger.get_n_challenges(num_challenges);
+
+    // If there are lookups in the circuit, we should get delta challenges as well.
+    // But we can use the already generated `plonk_betas` and `plonk_gammas` as the first `plonk_deltas` challenges.
+    let plonk_deltas = if has_lookup {
+        const NUM_COINS_LOOKUP: usize = 4;
+        let num_lookup_challenges = NUM_COINS_LOOKUP * num_challenges;
+        let mut deltas = Vec::with_capacity(num_lookup_challenges);
+        let num_additional_challenges = num_lookup_challenges - 2 * num_challenges;
+        let additional = challenger.get_n_challenges(num_additional_challenges);
+        deltas.extend(&plonk_betas);
+        deltas.extend(&plonk_gammas);
+        deltas.extend(additional);
+        deltas
+    } else {
+        vec![]
+    };
+
+    // `plonk_zs_partial_products_cap` also contains the commitment to lookup polynomials.
+    challenger.observe_cap::<C::Hasher>(plonk_zs_partial_products_cap);
+    let plonk_alphas = challenger.get_n_challenges(num_challenges);
+
+    challenger.observe_cap::<C::Hasher>(quotient_polys_cap);
+    let plonk_zeta = challenger.get_extension_challenge::<D>();
+
+    challenger.observe_openings(&openings.to_fri_openings());
+
+    Ok(ProofChallenges {
+        plonk_betas,
+        plonk_gammas,
+        plonk_alphas,
+        plonk_deltas,
+        plonk_zeta,
+        fri_challenges: challenger.fri_challenges::<C, D>(
+            commit_phase_merkle_caps,
+            final_poly,
+            pow_witness,
+            common_data.public_initial_degree_bits(),
+            &config.fri_config,
+            None,
+            None,
+        ),
+    })
+}
+
+impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
+    ProofWithPublicInputs<F, C, D>
+{
+    pub(crate) fn fri_query_indices(
+        &self,
+        circuit_digest: &<<C as GenericConfig<D>>::Hasher as Hasher<C::F>>::Hash,
+        common_data: &CommonCircuitData<F, D>,
+    ) -> anyhow::Result<Vec<usize>> {
+        Ok(self
+            .get_challenges(self.get_public_inputs_hash(), circuit_digest, common_data)?
+            .fri_challenges
+            .fri_query_indices)
+    }
+
+    /// Computes all Fiat-Shamir challenges used in the Plonk proof.
+    pub fn get_challenges(
+        &self,
+        public_inputs_hash: <<C as GenericConfig<D>>::InnerHasher as Hasher<F>>::Hash,
+        circuit_digest: &<<C as GenericConfig<D>>::Hasher as Hasher<C::F>>::Hash,
+        common_data: &CommonCircuitData<F, D>,
+    ) -> anyhow::Result<ProofChallenges<F, D>> {
+        let Proof {
+            wires_cap,
+            plonk_zs_partial_products_cap,
+            quotient_polys_cap,
+            openings,
+            opening_proof:
+                FriProof {
+                    commit_phase_merkle_caps,
+                    final_poly,
+                    pow_witness,
+                    ..
+                },
+        } = &self.proof;
+
+        get_challenges::<F, C, D>(
+            public_inputs_hash,
+            wires_cap,
+            plonk_zs_partial_products_cap,
+            quotient_polys_cap,
+            openings,
+            commit_phase_merkle_caps,
+            final_poly,
+            *pow_witness,
+            circuit_digest,
+            common_data,
+        )
+    }
+}
+
+impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>
+    CompressedProofWithPublicInputs<F, C, D>
+{
+    /// Computes all Fiat-Shamir challenges used in the Plonk proof.
+    pub(crate) fn get_challenges(
+        &self,
+        public_inputs_hash: <<C as GenericConfig<D>>::InnerHasher as Hasher<F>>::Hash,
+        circuit_digest: &<<C as GenericConfig<D>>::Hasher as Hasher<C::F>>::Hash,
+        common_data: &CommonCircuitData<F, D>,
+    ) -> anyhow::Result<ProofChallenges<F, D>> {
+        let CompressedProof {
+            wires_cap,
+            plonk_zs_partial_products_cap,
+            quotient_polys_cap,
+            openings,
+            opening_proof:
+                CompressedFriProof {
+                    commit_phase_merkle_caps,
+                    final_poly,
+                    pow_witness,
+                    ..
+                },
+        } = &self.proof;
+
+        get_challenges::<F, C, D>(
+            public_inputs_hash,
+            wires_cap,
+            plonk_zs_partial_products_cap,
+            quotient_polys_cap,
+            openings,
+            commit_phase_merkle_caps,
+            final_poly,
+            *pow_witness,
+            circuit_digest,
+            common_data,
+        )
+    }
+
+    /// Computes all coset elements that can be inferred in the FRI reduction steps.
+    pub(crate) fn get_inferred_elements(
+        &self,
+        challenges: &ProofChallenges<F, D>,
+        common_data: &CommonCircuitData<F, D>,
+    ) -> anyhow::Result<FriInferredElements<F, D>> {
+        let ProofChallenges {
+            plonk_zeta,
+            fri_challenges:
+                FriChallenges {
+                    fri_alpha,
+                    fri_betas,
+                    fri_query_indices,
+                    ..
+                },
+            ..
+        } = challenges;
+        let mut fri_inferred_elements = Vec::new();
+        // Holds the indices that have already been seen at each reduction depth.
+        let mut seen_indices_by_depth =
+            vec![HashSet::new(); common_data.fri_params.reduction_arity_bits.len()];
+        let precomputed_reduced_evals = PrecomputedReducedOpenings::from_os_and_alpha(
+            &self.proof.openings.to_fri_openings(),
+            *fri_alpha,
+        );
+        let log_n =
+            common_data.public_initial_degree_bits() + common_data.config.fri_config.rate_bits;
+        let fri_instance = common_data.get_fri_instance(*plonk_zeta);
+        // Simulate the proof verification and collect the inferred elements.
+        // The content of the loop is basically the same as the `fri_verifier_query_round` function.
+        for &(mut x_index) in fri_query_indices.iter() {
+            let mut subgroup_x = F::MULTIPLICATIVE_GROUP_GENERATOR
+                * F::primitive_root_of_unity(log_n).exp_u64(reverse_bits(x_index, log_n) as u64);
+            let initial_tree_proof = &self
+                .proof
+                .opening_proof
+                .query_round_proofs
+                .initial_trees_proofs[&x_index];
+            // #64696: validate leaf shapes against the FRI instance before evaluating opening
+            // expressions, so malformed metadata cannot make `unsalted_eval` index out of bounds
+            // and panic during inference (this runs before full FRI shape validation).
+            validate_fri_initial_proof_shape::<F, C::Hasher, D>(
+                initial_tree_proof,
+                core::slice::from_ref(&fri_instance),
+                common_data.fri_params.leaf_hiding,
+            )?;
+            let mut old_eval = fri_combine_initial::<F, C, D>(
+                &fri_instance,
+                initial_tree_proof,
+                *fri_alpha,
+                subgroup_x,
+                &precomputed_reduced_evals,
+                &common_data.fri_params,
+            );
+            for (i, &arity_bits) in common_data
+                .fri_params
+                .reduction_arity_bits
+                .iter()
+                .enumerate()
+            {
+                let coset_index = x_index >> arity_bits;
+                if !seen_indices_by_depth[i].insert(coset_index) {
+                    // If this index has already been seen, we can skip the rest of the reductions.
+                    break;
+                }
+                fri_inferred_elements.push(old_eval);
+                let arity = 1 << arity_bits;
+                let mut evals = self.proof.opening_proof.query_round_proofs.steps[i][&coset_index]
+                    .evals
+                    .clone();
+                let x_index_within_coset = x_index & (arity - 1);
+                evals.insert(x_index_within_coset, old_eval);
+                old_eval = compute_evaluation(
+                    subgroup_x,
+                    x_index_within_coset,
+                    arity_bits,
+                    &evals,
+                    fri_betas[i],
+                );
+                subgroup_x = subgroup_x.exp_power_of_2(arity_bits);
+                x_index = coset_index;
+            }
+        }
+        Ok(FriInferredElements(fri_inferred_elements))
+    }
+}

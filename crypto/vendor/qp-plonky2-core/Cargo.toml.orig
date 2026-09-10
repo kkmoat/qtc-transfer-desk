@@ -1,0 +1,49 @@
+[package]
+name = "qp-plonky2-core"
+description = "Core traits and types shared between plonky2 prover and verifier"
+version = "1.5.5"
+authors = [
+  "Daniel Lubarov <daniel@lubarov.com>",
+  "William Borgeaud <williamborgeaud@gmail.com>",
+  "Nicholas Ward <npward@berkeley.edu>",
+]
+readme = "README.md"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[features]
+default = []
+std = ["anyhow/std", "itertools/use_std", "serde/std"]
+rand = ["plonky2-field/rand", "dep:rand"]
+
+[dependencies]
+ahash = { workspace = true }
+anyhow = { workspace = true }
+hashbrown = { workspace = true }
+itertools = { workspace = true }
+keccak-hash = { version = "=0.8.0", default-features = false }
+log = { workspace = true }
+num = { version = "=0.4.3", default-features = false, features = ["alloc"] }
+serde = { workspace = true, features = ["rc"] }
+static_assertions = { workspace = true }
+unroll = { workspace = true }
+
+# Local dependencies
+plonky2-field = { package = "qp-plonky2-field", version = "=1.5.5", path = "../field", default-features = false }
+plonky2_util = { version = "=1.0.0", path = "../util", default-features = false }
+
+# Optional dependencies
+rand = { version = "=0.10.1", default-features = false, optional = true }
+
+[dev-dependencies]
+rand = { version = "=0.10.1", features = ["std_rng"] }
+plonky2-field = { package = "qp-plonky2-field", version = "=1.5.5", path = "../field", features = [
+  "rand",
+] }
+
+[lints]
+workspace = true

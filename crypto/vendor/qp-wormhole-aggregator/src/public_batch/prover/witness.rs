@@ -1,0 +1,59 @@
+//! Witness filling for the public-batch aggregation circuit.
+//!
+//! Crate-private: callers with untrusted proof vectors must go through
+//! [`super::PublicBatchProver::commit`], which verifies each inner proof,
+//! enforces metadata compatibility, pads only after validation, and rejects
+//! all-dummy batches before this helper runs.
+
+use anyhow::{bail, Result};
+use plonky2::iop::witness::{PartialWitness, WitnessWrite};
+use plonky2::plonk::proof::ProofWithPublicInputs;
+
+use zk_circuits_common::circuit::{C, D, F};
+use zk_circuits_common::utils::Digest;
+
+use crate::common::utils::ensure_proof_shape_matches_targets;
+use crate::public_batch::circuit::circuit_logic::PublicBatchCircuitTargets;
+
+/// Fill a partial witness for the public-batch aggregation circuit.
+///
+/// Structural checks only (proof count + shape). Not safe for untrusted inputs
+/// on its own — see the module docs.
+pub(crate) fn fill_public_batch_witness(
+    pw: &mut PartialWitness<F>,
+    targets: &PublicBatchCircuitTargets,
+    private_batch_proofs: &[ProofWithPublicInputs<F, C, D>],
+    aggregator_address: Digest,
+) -> Result<()> {
+    if private_batch_proofs.len() != targets.private_batch_proofs.len() {
+        bail!(
+            "public_batch witness fill expected {} private_batch proofs, got {}",
+            targets.private_batch_proofs.len(),
+            private_batch_proofs.len()
+        );
+    }
+
+    for (target, value) in targets
+        .aggregator_address
+        .iter()
+        .zip(aggregator_address.iter())
+    {
+        pw.set_target(*target, *value)?;
+    }
+
+    for (i, (proof_t, proof)) in targets
+        .private_batch_proofs
+        .iter()
+        .zip(private_batch_proofs.iter())
+        .enumerate()
+    {
+        // Full proof-shape preflight at this Result boundary: a malformed
+        // proof (wrong PI count, truncated FRI query rounds, inconsistent
+        // opening vectors, ...) would otherwise panic inside plonky2's
+        // witness writer or silently leave targets unset.
+        ensure_proof_shape_matches_targets(proof_t, proof, i, "private-batch proof")?;
+        pw.set_proof_with_pis_target(proof_t, proof)?;
+    }
+
+    Ok(())
+}

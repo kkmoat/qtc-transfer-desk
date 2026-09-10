@@ -67,3 +67,33 @@ assert.throws(() => encrypted.deriveAddress(0, 0), /locked/);
 encrypted.free();
 assert.throws(() => openWormhole('not a mnemonic'), /Invalid encrypted-account mnemonic/);
 console.log('PASS: encrypted two-branch HD vectors, u64 nullifiers, ownership/range checks, no secret getters, clear/free.');
+
+// Optional full prover module: use only this public, deliberately compromised fixture.
+if (process.env.QUANTUS_WORMHOLE_NODE_MODULE) {
+  const proofModule = require(process.env.QUANTUS_WORMHOLE_NODE_MODULE);
+  const fixture = require('./test-fixtures/withdrawal-public.json');
+  const session = proofModule.openWormhole(phrase);
+  const normal = JSON.parse(session.normalInfo(0));
+  assert.equal(normal.address, fixture.expectedNormalAddress);
+  assert.equal(normal.publicKey.length, 1952);
+  const job = session.prepareWithdrawal(JSON.stringify(fixture));
+  const summary = JSON.parse(job.summary());
+  assert.equal(summary.feePlanck, '10000000123');
+  for (const mutate of [r => r.codeHash = '0x00', r => r.expected.netPlanck = '1', r => r.normalAccountIndex = 1, r => r.inputs[0].leafHash = '0x00']) {
+    const bad = structuredClone(fixture); mutate(bad);
+    assert.throws(() => session.prepareWithdrawal(JSON.stringify(bad)));
+  }
+  job.proveNextLeaf();
+  const proof = job.aggregate();
+  const result = JSON.parse(proof.summary());
+  assert.equal(result.verified, true);
+  assert.equal(result.publicInputs.length, 162);
+  assert(proof.proofBytes.length > 100000);
+  const tail = Buffer.from(proof.proofBytes).subarray(-162 * 8);
+  assert.deepEqual(Array.from({length:162}, (_, i) => tail.readBigUInt64LE(i * 8).toString()), result.publicInputs);
+  assert.throws(() => job.aggregate());
+  proof.free(); job.free(); session.clear();
+  assert.throws(() => session.normalInfo(0));
+  session.free();
+  console.log('PASS: full canonical 7-slot proof, exact outgoing bytes/PI binding, public self-address, amount/header/runtime rejections, one-shot/clear.');
+}

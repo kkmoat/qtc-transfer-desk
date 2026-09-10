@@ -6,6 +6,9 @@ use wasm_bindgen::prelude::*;
 use zeroize::Zeroizing;
 use qp_rusty_crystals_hdwallet::{SensitiveBytes64, WormholePair};
 
+#[cfg(feature = "wormhole-prover")]
+mod wormhole_proof;
+
 const CONTEXT: &[u8] = b"QUANTUS_EXTRINSIC";
 const SUPPORTED_SPEC: u32 = 152;
 const MAX_PAYLOAD: usize = 1024 * 1024;

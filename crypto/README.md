@@ -1,11 +1,12 @@
 # Quantus browser crypto resource
 
-This small WASM adapter uses the official Quantus primitives with exact versions:
+This WASM adapter uses the official Quantus primitives with exact versions:
 
 - `qp-rusty-crystals-dilithium = 4.1.1` (ML-DSA-65 + ML-DSA-87)
 - `qp-rusty-crystals-hdwallet = 4.1.1`
 - `qp-poseidon-core = 3.1.0`
 - `wasm-bindgen = 0.2.114`
+- Optional `wormhole-prover` feature: `qp-wormhole-{circuit,prover,aggregator} = 4.3.0`, `qp-zk-circuits-common = 4.3.0`, `qp-plonky2 = 1.5.5`
 
 The matching `Cargo.lock` pins all transitive dependencies. Source license: GPL-3.0-only, reflecting the official crypto libraries. Distribute the corresponding source and license alongside public WASM assets. This is a small application adapter, not an official Quantus release or a security audit.
 
@@ -37,9 +38,27 @@ Signature result lengths: 65 = 3309, 87 = 4627 bytes. Public keys: 65 = 1952, 87
 - `computeNullifier(index, branch, transferCountDecimal, expectedAddress)`, which verifies address ownership and accepts the full u64 count without floating-point conversion.
 - `clear()`, `free()`, and `cleared` for session lifecycle.
 
-Canonical paths are `m/44'/189189189'/0'/branch'/index'`, matching Quantus apps commit `76df7b06d7a092c9cdfb9a459f8effb9ddb5e737`. No secret, first hash, seed, or mnemonic getter is exposed. The Worker can return public addresses and nullifiers for read-only balance queries. It does not export proofs or enable encrypted withdrawals.
+Canonical paths are `m/44'/189189189'/0'/branch'/index'`, matching Quantus apps commit `76df7b06d7a092c9cdfb9a459f8effb9ddb5e737`. No secret, first hash, seed, or mnemonic getter is exposed. The nullifier uses the official Poseidon construction, cross-checked against `qp-wormhole-circuit 4.3.0` for both branches and full-width transfer counts.
 
-The nullifier uses the official Poseidon construction. Tests cross-check both HD branches and full-width transfer counts against published `qp-wormhole-circuit 4.3.0` behavior; only the already-vendored Poseidon implementation is compiled into this small adapter. No proving dependencies were added. Ordinary ML-DSA signing remains separate.
+## Local encrypted self-withdrawal
+
+The site dynamically imports `quantus_wormhole_crypto.js` inside the existing Worker only when opening an encrypted account. The heavy module creates and owns the seed session directly; seed bytes never cross WASM instances or leave the Worker. Ordinary signing uses the separate default build.
+
+The heavy `WormholeSession` additionally provides:
+
+- `normalInfo(accountIndex)`: JSON containing only the same seed's normal ML-DSA-65 address, account ID, public key and canonical path.
+- `prepareWithdrawal(requestJson)`: an opaque one-shot `WithdrawalJob`. It validates the public snapshot, ownership, Merkle paths, header hash and all amounts before retaining the private witnesses.
+- `job.summary()`, `job.proveNextLeaf()` and `job.aggregate()`. The final opaque result exposes `proofBytes` and a JSON public summary. Leaf proofs and private witnesses are never exported.
+
+The matching Worker messages are `wormhole-normal`, `wormhole-check`, and `wormhole-prove`; `wormhole-derive` and `wormhole-nullifiers` retain their existing read-only APIs. Proving emits `{id, progress: {stage, completed, total}}`; final messages retain `{id, ok, result}`. Stages are `leaf`, `aggregate`, and `verified`. Closing clears the seed, frees pending witnesses, and rejects future operations; the UI terminates the Worker to cancel synchronous proving. It also terminates it after broadcast and separately tracks the public transaction.
+
+This version consumes the entire selected one to seven UTXOs and sends the combined net amount only to a normal account derived from the same seed. It does not create encrypted change. Unselected UTXOs remain untouched. The official scale-down factor is 10,000,000,000 Planck (0.01 QTC) per unit. Each input is rounded down to units; the batch net is `floor(sumUnits * 9996 / 10000)`, with the fee allocated backwards across inputs. `feePlanck = inputPlanck - netPlanck` includes both the chain volume fee and input quantization dust. The client displays those separately. No website service fee is taken from this first self-withdrawal. The subsequent independently reviewed normal transfer retains the site's disclosed 0.5% service fee.
+
+The adapter accepts only specVersion 152, the fixed mainnet genesis, the reviewed runtime code Blake2-256 `0x4a2d509dfa3faf06a9645bd444d5f2f63ac8ab2f75ba540a0b84680a514514fa`, asset 0 and volume fee 4 bps. The client must establish these values from finalized public RPC state; a supplied JSON string alone does not prove chain canonicality. Leaf data, transfer count, raw amount, derived account, Poseidon leaf hash, sorted Merkle membership and the header hash are checked again inside WASM. The recipient and output allocations are constructed internally.
+
+After aggregation, the exact outgoing proof bytes are deserialized and verified against the canonical source-built verifier. All 162 actual public inputs are returned and checked for the expected block, fee, summed output, self-account and real nullifier subset. The seven nullifiers include nonzero dummy nullifiers; the client checks all seven against chain state before submission. Canonical verifier and common byte hashes are fixed in `src/wormhole_proof.rs` and match the reviewed runtime's embedded verifier. Runtime changes require explicit review.
+
+The public fixture in `test-fixtures/withdrawal-public.json` is synthetic and deliberately has no valid funded chain inclusion. It may be used to exercise the complete prover without sending any transaction. A real Chrome 152 Worker completed this fixture, rejected eleven altered requests, matched serialized proof public inputs, rejected operations after close, and reopened the same ordinary account for a signing regression. External network access was blocked; only localhost static assets were loaded. One-input proof generation used approximately 42 seconds and 903 MiB of WASM memory on the test machine. These checks are not an independent security audit or a guarantee of safety on every browser.
 
 ## Sensitive memory
 
@@ -49,7 +68,7 @@ Error messages deliberately omit mnemonic contents. No password, mnemonic, or se
 
 ## Verification
 
-`cargo test --release` verifies official cross-project account vectors, correct scheme-specific paths, context separation (empty context must fail), tampering, long-message hashing, and clear behavior. `node test-node.cjs` executes the actual WASM build with both schemes and 140/256/257/300 byte payloads, tests malformed inputs and cleared-handle rejection.
+`cargo test --release --features wormhole-prover` verifies official cross-project account vectors, correct scheme-specific paths, context separation (empty context must fail), tampering, long-message hashing, and clear behavior. `node test-node.cjs` executes the actual WASM build with both schemes and 140/256/257/300 byte payloads, tests malformed inputs and cleared-handle rejection. When `QUANTUS_WORMHOLE_NODE_MODULE` points to the heavy Node binding it also executes full proof generation and byte/public-input binding. `build.sh` runs both suites using vendored dependencies.
 
 Fixtures are publicly documented test mnemonics from official repositories. They must never hold real funds. No test broadcasts a transaction or reads any user wallet.
 

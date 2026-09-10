@@ -113,6 +113,15 @@ export default function Home(){
  async function copy(value:string){try{await navigator.clipboard.writeText(value);setCopied(value);setTimeout(()=>setCopied(''),1800);}catch{setError(t("无法自动复制，请手动选中复制。"));}}
  const closeModal=(open:boolean)=>{if(!open&&!busy){if(phraseInput.current)phraseInput.current.value='';setModal(null);setError('');}};
  const resetTransaction=()=>{if(!complete(record)||tracking)return;sessionStorage.removeItem(PENDING_KEY);setRecord(null);setPrepared(null);setRecipient('');setAmount('');setError('');};
+ const continueFromEncrypted=(address:string,accountIndex:number)=>{
+  window.location.hash='#transfer';
+  if(busy||record&&!complete(record)||tracking){setNote(t("请先处理普通账户中尚未结束的交易，再打开加密转出到账的账户。"));return;}
+  lock();
+  try{sessionStorage.removeItem(PENDING_KEY);}catch{/* Previous public history remains available. */}
+  setRecord(null);setPrepared(null);setRecipient('');setAmount('');setError('');
+  selectAddress(address);setExpectedAddress(address);setWatchAddress(address);setIndex(String(accountIndex));setModal('open');
+  setNote(t("第一步已最终确认。请重新输入同一助记词打开此普通账户；下一笔转账需另行确认 0.5% 服务费及网络费。"));
+ };
  const draftFee=(()=>{try{return serviceFee(parseAmount(amount));}catch{return null;}})();
  const statusTitle=record?({submitting:t("正在提交"),submitted:t("等待入块"),included:record.execution==='failed'?t("执行失败，等待确认"):t("已入块，等待确认"),finalized:t("转账已确认"),failed:t("转账未成功"),unknown:t("结果待确认"),expired:t("交易已过期")})[record.phase]:'';
 
@@ -156,7 +165,7 @@ export default function Home(){
   </>}
  </section>
  </div>
- <div className="desk-view" hidden={view!=='encrypted'}><EncryptedAccount active={view==='encrypted'} onUnlock={lock}/></div>
+ <div className="desk-view" hidden={view!=='encrypted'}><EncryptedAccount active={view==='encrypted'} onUnlock={lock} onContinue={continueFromEncrypted}/></div>
  <div className="desk-view" hidden={view!=='mining'}><MiningCalculator active={view==='mining'}/></div>
  <footer><span>{t("独立社区工具 · 非 Quantus 官方产品 · 未经独立安全审计")}</span><div className="footer-links"><a href="https://github.com/kkmoat/qtc-transfer-desk" target="_blank" rel="noopener noreferrer">{t("GitHub 开源")}</a><a href="/source/quantus-browser-crypto-source.zip" download>{t("签名组件源码")}</a><a href="/source/LICENSE.txt" target="_blank">GPL-3.0</a><div className="footer-contact"><button type="button" className="contact-button" onClick={copyContact} aria-label={t("联系我们，复制微信号 {0}", CONTACT_WECHAT)} title={t("点击复制微信号：{0}", CONTACT_WECHAT)}>{t("联系我们")}<Copy size={14} aria-hidden="true"/></button><span className="contact-status" role="status" aria-live="polite">{t(contactMessage)}</span></div></div></footer></main>
  <Dialog open={historyDetailHash!==null} onOpenChange={open=>{if(!open)closeHistory();}}><DialogContent className="wallet-dialog history-dialog"><DialogHeader><DialogTitle>{t("转账记录详情")}</DialogTitle><DialogDescription>{t("这是本地保存的交易信息。重新查询只核对链上结果，不会再次付款。")}</DialogDescription></DialogHeader>

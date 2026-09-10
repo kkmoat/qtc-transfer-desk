@@ -1,0 +1,35 @@
+{
+  "block": {
+    "digest": "0x00",
+    "extrinsicsRoot": "0x0303030303030303030303030303030303030303030303030303030303030303",
+    "hash": "0x4225f3ebb2bc6c75ede2c6b44faaa4824f3764442a20dd7591af5c5b4de7385c",
+    "number": 1,
+    "parentHash": "0x0101010101010101010101010101010101010101010101010101010101010101",
+    "stateRoot": "0x0202020202020202020202020202020202020202020202020202020202020202",
+    "zkTreeRoot": "0x3dc6e2cf0ac145d0ee1c5eb4faef7febb063f59e69f623f6578f7907e26e61be"
+  },
+  "codeHash": "0x4a2d509dfa3faf06a9645bd444d5f2f63ac8ab2f75ba540a0b84680a514514fa",
+  "expected": {
+    "feePlanck": "10000000123",
+    "inputPlanck": "1000000000123",
+    "netPlanck": "990000000000"
+  },
+  "expectedNormalAddress": "qzoyC4eRTrexYoutXABVsf61QJZxJim3iWvayRQwEjXWgA4mw",
+  "genesisHash": "0xfb5487c0be6ae4ade2d41d16e50465129861636c2b8d61fa94d7a19631626fba",
+  "inputs": [
+    {
+      "address": "qzpWh4AEtsgCyEbv4WBgFWnB9bcdF2L2jVDuyjXP9mSTyBaeU",
+      "amountPlanck": "1000000000123",
+      "branch": 0,
+      "index": 0,
+      "leafData": "0xdfcfd6e59c75d208e84f54a887537bcf7b04265790ec79960bf49de123404d0e0000000000000000000000007b10a5d4e80000000000000000000000",
+      "leafHash": "0x3dc6e2cf0ac145d0ee1c5eb4faef7febb063f59e69f623f6578f7907e26e61be",
+      "leafIndex": "0",
+      "siblings": [],
+      "transferCount": "0"
+    }
+  ],
+  "normalAccountIndex": 0,
+  "specVersion": 152,
+  "volumeFeeBps": 4
+}

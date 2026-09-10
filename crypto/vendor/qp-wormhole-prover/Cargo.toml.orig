@@ -1,0 +1,33 @@
+[package]
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+name = "qp-wormhole-prover"
+readme = "README.md"
+version.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+qp-plonky2 = { workspace = true }
+wormhole-circuit = { package = "qp-wormhole-circuit", version = "=4.3.0" }
+zk-circuits-common = { package = "qp-zk-circuits-common", version = "=4.3.0" }
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"anyhow/std",
+	"qp-plonky2/std",
+	"wormhole-circuit/std",
+	"zk-circuits-common/std",
+]
+
+[lints]
+workspace = true
+
+[[bench]]
+harness = false
+name = "prover"

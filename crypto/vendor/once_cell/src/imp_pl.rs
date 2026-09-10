@@ -80,16 +80,14 @@ impl<T> OnceCell<T> {
     pub(crate) fn wait(&self) {
         let key = &self.state as *const _ as usize;
         unsafe {
-            while self.state.load(Ordering::Acquire) != COMPLETE {
-                parking_lot_core::park(
-                    key,
-                    || self.state.load(Ordering::Acquire) != COMPLETE,
-                    || (),
-                    |_, _| (),
-                    parking_lot_core::DEFAULT_PARK_TOKEN,
-                    None,
-                );
-            }
+            parking_lot_core::park(
+                key,
+                || self.state.load(Ordering::Acquire) != COMPLETE,
+                || (),
+                |_, _| (),
+                parking_lot_core::DEFAULT_PARK_TOKEN,
+                None,
+            );
         }
     }
 

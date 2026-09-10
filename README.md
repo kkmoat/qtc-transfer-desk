@@ -6,7 +6,7 @@
 
 - 在线使用：[www.qtc-transfer.xyz](https://www.qtc-transfer.xyz/)
 - 语言：页面右上角选择 **中文 / English**，偏好仅保存在本机 `qtc-language-v1`，切换不会改变账户、金额或服务费。
-- 加密账户：[Encrypted Account 恢复与余额查询](https://www.qtc-transfer.xyz/#encrypted)
+- 加密账户：[Encrypted Account 恢复与转出](https://www.qtc-transfer.xyz/#encrypted)
 - 挖矿计算：[设备算力与每枚 QTC 成本](https://www.qtc-transfer.xyz/#mining)
 - 源码：[github.com/kkmoat/qtc-transfer-desk](https://github.com/kkmoat/qtc-transfer-desk)
 - 作者：[X · @kkmoat](https://x.com/kkmoat)
@@ -47,13 +47,30 @@
 
 显示的是**所标注最终确认区块上的未花费余额，扣除费用和量化零头之前**，不等于当前可立即支出的金额；近期转入和转出可能尚未反映。官方已确认的自定义大间隔地址不在自动恢复范围内。每次查询都重新核对，不持久缓存地址集合或加密余额。
 
-**当前支持恢复、收款地址和余额查询；加密账户浏览器转出尚未开放，请使用官方 Quantus 钱包。** Wormhole 转出需要独立的零知识证明，不能替换成普通 ML-DSA 签名。查询不收费、不签名、不广播交易。离开加密页面、手动锁定、5 分钟未操作或 `pagehide` 会终止其 Worker。
+### 两步转出
+
+1. 恢复并扫描后，填写**本人普通 ML-DSA-65 账户序号**（默认 `0`）。网页用同一助记词在 Worker 内派生并验证收款地址，不接受任意第三方地址。
+2. 选择本次消费的 1–7 笔未花费入账记录。所选记录扣费后全部转出，不产生加密找零；其余记录保留。预览列出所选总额、Wormhole 链上费、原始输入零头损失和实际到账。**第一步本站服务费为 0。**
+3. 用户明确确认后，在本机生成并验证固定 7 槽聚合零知识证明，仅向官方 RPC 广播一次。证明可能使用约 **1 GB 内存**，建议桌面浏览器并保持页面打开；内存不足、加载失败或超时会锁定钱包，提交前失败不会广播。
+4. 网页按原交易哈希核对实际到账事件及最终确认。只有验证成功后才出现第二步入口；不会自动付款。点击后重新输入同一助记词打开本人普通账户，再按现有流程填写收款方并确认 **0.5% 服务费 + 普通网络费**。
+
+当前固定主网 runtime 152 / transaction version 6，额外核对运行时代码 hash `0x4a2d509dfa3faf06a9645bd444d5f2f63ac8ab2f75ba540a0b84680a514514fa`，以及原始入账事件、规范 Merkle 叶子/路径、带 zkTreeRoot 的区块头和完整证明公开输入。任一规则变化会停止转出。
+
+链上 Wormhole 费率为 **4 bps（0.04%）**，但金额按 **0.01 QTC** 量化：逐笔舍去不足量化单位的零头，再对所选总量计算费用并取整。**实际小额费用可能明显超过 0.04%**，以确认页准确金额为准；净到账为零的批次会被拒绝。
+
+只在浏览器保留公开转出记录：`qtc-wormhole-history-v1:<hash>` 保存元数据，`qtc-wormhole-pending-v1` 在当前标签页保存公开广播字节。提交前无法持久保存记录则不广播。刷新后重新验证链上结果，不信任缓存的“成功”状态。结果不明不自动替换证明；同源标签页通过 Web Lock 和待确认记录避免重复提交。其他设备无法共享此锁，请勿重复消费同一批输入。
+
+Wormhole 有效期按当前 `System.BlockHashCount = 4096` 规则核对，不复用普通交易的 64 区块周期。完整有效区间未最终扫描完，不会将未知结果判作过期。`ExitMintFailed` / `SegmentsDenied` 即使伴随 `ExtrinsicSuccess` 也不算成功，部分 nullifier 可能已消耗，需重新核对而非直接重试。
+
+离开加密页面、手动锁定、5 分钟未操作或 `pagehide` 会终止其 Worker；本地证明生成时暂停闲置计时。锁定已提交交易的钱包**不撤销交易**，公开结果查询仍可继续。清除网站数据会丢失本地历史，需要凭交易哈希通过区块浏览器查询。
 
 ## English interface
 
 Use **中文 / English** in the top-right corner. Transfers, fee confirmation, history, mining inputs/results, encrypted account recovery, and error messages are translated locally. No translation service is contacted. Only the language preference is saved; switching language does not change form values, wallet identity, or the **0.5%** regular-transfer service fee.
 
-The **Encrypted Account** view restores official Wormhole receiving/change addresses and checks balances at a finalized mainnet block. It currently supports **recovery, receiving addresses, and balance queries only**, not browser withdrawals. Public addresses are queried from the official indexer and spent markers from official RPC; operators may correlate requests with your IP. Recovery phrases and secret material remain in the local Worker and are not persisted. Use the official Quantus wallet to send from an encrypted account.
+The **Encrypted Account** view restores official Wormhole receiving/change addresses, checks finalized balances, and supports a **two-step withdrawal**. Select up to 7 incoming records and withdraw their complete net value to your own ML-DSA-65 account derived from the same phrase. Step 1 has no site fee; the chain fee and 0.01 QTC quantization losses are shown before confirmation. The local proof can use about 1 GB of memory. After verified finality, re-enter the phrase to open the regular account and separately approve any subsequent transfer (0.5% service fee plus network fee).
+
+Public addresses are queried from the official indexer and spent markers from official RPC; operators may correlate requests with your IP. Phrases, seeds, and private witnesses stay in the local Worker and are not persisted. Only public transaction metadata and the current public broadcast bytes are stored. Unknown results are tracked by their original hash, never automatically replaced. Clearing site data loses local history. Validation uses public test fixtures and mocked broadcast responses; no user-funded transaction is sent as part of automated testing.
 
 ## 费用
 

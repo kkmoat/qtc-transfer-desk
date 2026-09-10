@@ -1,0 +1,72 @@
+[package]
+name = "qp-plonky2-verifier"
+description = "Plonky2 verification library - minimal, no-std compatible, no randomness required"
+version = "1.5.5"
+authors = [
+  "Daniel Lubarov <daniel@lubarov.com>",
+  "William Borgeaud <williamborgeaud@gmail.com>",
+  "Nicholas Ward <npward@berkeley.edu>",
+]
+readme = "README.md"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[features]
+default = []
+std = [
+  "anyhow/std",
+  "itertools/use_std",
+  "num/std",
+  "serde/std",
+  "qp-plonky2-core/std",
+]
+
+[dependencies]
+# Use workspace versions for most deps
+ahash = { workspace = true }
+once_cell = { version = "=1.21.3", default-features = false, features = [
+  "alloc",
+  "race",
+  "critical-section",
+] }
+critical-section = { version = "=1.2.0", default-features = false }
+anyhow = { workspace = true }
+hashbrown = { workspace = true }
+itertools = { workspace = true }
+keccak-hash = { version = "=0.8.0", default-features = false }
+log = { workspace = true }
+# Override num to NOT include rand feature - this prevents rand → getrandom
+# from being pulled into WASM builds
+num = { version = "=0.4.3", default-features = false, features = ["alloc"] }
+serde = { workspace = true, features = ["rc"] }
+static_assertions = { workspace = true }
+unroll = { workspace = true }
+
+# Poseidon2 - self-contained implementation
+qp-poseidon-core = { version = "=3.1.0", default-features = false }
+
+# Local dependencies - note: no "rand" feature = verification-only, no randomness needed
+plonky2-field = { package = "qp-plonky2-field", version = "=1.5.5", path = "../field", default-features = false }
+plonky2_util = { version = "=1.0.0", path = "../util", default-features = false }
+qp-plonky2-core = { version = "=1.5.5", path = "../core", default-features = false }
+
+[dev-dependencies]
+criterion = { version = "=0.8.2", default-features = false, features = [
+  "cargo_bench_support",
+] }
+rand = { version = "=0.10.1", features = ["std_rng"] }
+plonky2-field = { package = "qp-plonky2-field", version = "=1.5.5", path = "../field", features = [
+  "rand",
+] }
+# path-only (no version): qp-plonky2 depends on this crate, so a versioned
+# dev-dep would form a publish cycle on crates.io. Cargo drops path-only
+# dev-deps when packaging, breaking the cycle.
+plonky2 = { package = "qp-plonky2", path = "../plonky2" }
+ciborium = { version = "=0.2.2" }
+
+[lints]
+workspace = true

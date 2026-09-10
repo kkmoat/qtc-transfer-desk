@@ -1,8 +1,21 @@
-import init, { deriveAccount, verifyPayload, openWormhole } from './quantus_browser_crypto.js';
+import init, { deriveAccount, verifyPayload } from './quantus_browser_crypto.js';
 let handle = null;
 let wormhole = null;
+let proofModule = null;
+let proofReady = null;
+let activeJob = null;
+let proving = false;
+let sessionGeneration = 0;
+async function loadProof() {
+  if (!proofReady) proofReady = import('./quantus_wormhole_crypto.js').then(async module => { await module.default(); proofModule = module; }).catch(error => { proofReady = null; throw error; });
+  await proofReady;
+  return proofModule;
+}
 const ready = init();
 function release() {
+  sessionGeneration++;
+  if (activeJob) { activeJob.free(); activeJob = null; }
+  proving = false;
   if (handle) { handle.clear(); handle.free(); handle = null; }
   if (wormhole) { wormhole.clear(); wormhole.free(); wormhole = null; }
 }
@@ -14,6 +27,7 @@ self.onmessage = async (event) => {
   const id = data.id;
   try {
     await ready;
+    if (proving && data.type !== 'close') throw new Error('busy');
     let result;
     if (data.type === 'open') {
       release();
@@ -35,13 +49,16 @@ self.onmessage = async (event) => {
       result = { signature: Array.from(signature), publicKey: Array.from(handle.publicKey) };
     } else if (data.type === 'wormhole-open') {
       release();
+      const generation = sessionGeneration;
       let phrase = data.phrase;
       delete data.phrase;
       try {
         if (typeof phrase !== 'string' || phrase.length > 1024) throw new Error('invalid-phrase');
-        wormhole = openWormhole(phrase);
+        const module = await loadProof();
+        if (generation !== sessionGeneration) throw new Error('locked');
+        wormhole = module.openWormhole(phrase);
       } finally { phrase = ''; }
-      result = { address: wormhole.deriveAddress(0, 0), accountId: Array.from(wormhole.accountId(0, 0)), path: "m/44'/189189189'/0'/0'/0'", proofSupported: false };
+      result = { address: wormhole.deriveAddress(0, 0), accountId: Array.from(wormhole.accountId(0, 0)), path: "m/44'/189189189'/0'/0'/0'", proofSupported: true };
     } else if (data.type === 'wormhole-derive') {
       if (!wormhole) throw new Error('locked');
       if (!branch(data.branch) || !index(data.startIndex) || !Number.isInteger(data.count) || data.count < 1 || data.count > 100 || !index(data.startIndex + data.count - 1)) throw new Error('invalid-range');
@@ -53,8 +70,39 @@ self.onmessage = async (event) => {
         if (!input || !branch(input.branch) || !index(input.index) || typeof input.address !== 'string' || input.address.length > 64 || typeof input.transferCount !== 'string' || !/^(0|[1-9][0-9]{0,19})$/.test(input.transferCount)) throw new Error('invalid-input');
         return hex(wormhole.computeNullifier(input.index, input.branch, input.transferCount, input.address));
       });
-    } else if (data.type === 'wormhole-prove') {
-      throw new Error('proof-unavailable');
+    } else if (data.type === 'wormhole-normal') {
+      if (!wormhole) throw new Error('locked');
+      if (!index(data.accountIndex)) throw new Error('invalid-index');
+      result = JSON.parse(wormhole.normalInfo(data.accountIndex));
+      if (data.expectedAddress !== undefined && data.expectedAddress !== result.address) throw new Error('derived-address-mismatch');
+    } else if (data.type === 'wormhole-check' || data.type === 'wormhole-prove') {
+      if (!wormhole) throw new Error('locked');
+      const json = JSON.stringify(data.request);
+      if (typeof json !== 'string' || json.length > 65536) throw new Error('invalid-input');
+      const job = wormhole.prepareWithdrawal(json);
+      activeJob = job;
+      try {
+        result = JSON.parse(job.summary());
+        if (data.type === 'wormhole-prove') {
+          proving = true;
+          const total = data.request.inputs.length;
+          for (let completed = 0; completed < total; completed++) {
+            self.postMessage({ id, progress: { stage: 'leaf', completed, total } });
+            await new Promise(resolve => setTimeout(resolve, 0));
+            if (activeJob !== job) throw new Error('locked');
+            job.proveNextLeaf();
+          }
+          self.postMessage({ id, progress: { stage: 'aggregate', completed: total, total } });
+          await new Promise(resolve => setTimeout(resolve, 0));
+          if (activeJob !== job) throw new Error('locked');
+          const proof = job.aggregate();
+          try { result = { ...JSON.parse(proof.summary()), proofBytes: Array.from(proof.proofBytes) }; }
+          finally { proof.free(); }
+          self.postMessage({ id, progress: { stage: 'verified', completed: total, total } });
+        }
+      } finally {
+        if (activeJob === job) { job.free(); activeJob = null; proving = false; }
+      }
     } else if (data.type === 'close') {
       release(); result = null;
     } else { throw new Error('unknown-request'); }

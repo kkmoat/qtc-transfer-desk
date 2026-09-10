@@ -1,0 +1,273 @@
+//! Prover logic for the Wormhole circuit.
+//!
+//! This module provides the [`WormholeProver`] type, which allows committing inputs to the circuit
+//! and generating a zero-knowledge proof using those inputs.
+//!
+//! The typical usage flow involves:
+//! 1. Initializing the prover via one of:
+//!    - [`build_fresh`] - Build fresh with the default leaf config (recommended)
+//!    - [`WormholeProver::new`] - Build fresh with custom config
+//!
+//!    The leaf circuit is small and builds in tens of milliseconds (release), so the
+//!    prover is always built from source rather than loaded from serialized artifacts.
+//!    Loading a `prover.bin` from disk was removed deliberately: `ProverOnlyCircuitData`
+//!    contains the witness generators and the target list that decides which witness
+//!    values are exposed as `public_inputs` in the returned proof, so a poisoned
+//!    artifact could exfiltrate private witness data (e.g. the Wormhole secret)
+//!    through the victim's serialized proof.
+//! 2. Creating user inputs with [`CircuitInputs`].
+//! 3. Committing user inputs using [`WormholeProver::commit`].
+//! 4. Generating a proof using [`WormholeProver::prove`].
+//!
+//! # Example
+//!
+//! ```no_run
+//! use wormhole_circuit::inputs::{CircuitInputs, PrivateCircuitInputs, PublicCircuitInputs};
+//! use wormhole_circuit::nullifier::Nullifier;
+//! use wormhole_circuit::substrate_account::SubstrateAccount;
+//! use wormhole_circuit::unspendable_account::UnspendableAccount;
+//! use qp_wormhole_prover::WormholeProver;
+//! use plonky2::plonk::circuit_data::CircuitConfig;
+//!
+//! # fn main() -> anyhow::Result<()> {
+//! // Create inputs. In practice, each input would be gathered from the real node.
+//! let inputs = CircuitInputs {
+//!     private: PrivateCircuitInputs {
+//!         secret: [1u8; 32].try_into().unwrap(),
+//!         transfer_count: 0,
+//!         unspendable_account: [1u8; 32].try_into().unwrap(),
+//!         parent_hash: [5u8; 32].try_into().unwrap(),
+//!         state_root: [3u8; 32].try_into().unwrap(),
+//!         extrinsics_root: [4u8; 32].try_into().unwrap(),
+//!         digest: [0u8; 110],
+//!         // ZK Merkle proof fields (empty for depth-0 tree where leaf IS root)
+//!         zk_tree_root: [0u8; 32],
+//!         zk_merkle_siblings: vec![],
+//!         zk_merkle_positions: vec![],
+//!     },
+//!     public: PublicCircuitInputs {
+//!         asset_id: 0_u32,
+//!         output_amount_1: 900,  // Spend amount after fee
+//!         output_amount_2: 99,   // Change amount (1000 - 900 - fee)
+//!         volume_fee_bps: 10,    // 0.1% = 10 basis points
+//!         nullifier: [1u8; 32].try_into().unwrap(),
+//!         block_hash: [0u8; 32].try_into().unwrap(),
+//!         exit_account_1: [2u8; 32].try_into().unwrap(),  // Spend destination
+//!         exit_account_2: [3u8; 32].try_into().unwrap(),  // Change destination
+//!         block_number: 1,
+//!         input_amount: 1000, // Intermediate PI consumed by the private batch
+//!     },
+//! };
+//!
+//! let config = CircuitConfig::standard_recursion_config();
+//! let prover = WormholeProver::new(config)?;
+//! let prover_next = prover.commit(&inputs)?;
+//! let _proof = prover_next.prove()?;
+//! # Ok(())
+//! # }
+//! ```
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
+use anyhow::{anyhow, bail};
+use plonky2::{
+    iop::witness::PartialWitness,
+    plonk::{
+        circuit_data::{CircuitConfig, ProverCircuitData},
+        proof::ProofWithPublicInputs,
+    },
+};
+
+use zk_circuits_common::circuit::{CircuitFragment, C, D, F};
+use zk_circuits_common::zk_merkle::MAX_DEPTH;
+
+use wormhole_circuit::nullifier::Nullifier;
+use wormhole_circuit::ByteCodec;
+use wormhole_circuit::{
+    block_header::BlockHeader,
+    circuit::circuit_logic::{CircuitTargets, WormholeCircuit},
+};
+use wormhole_circuit::{
+    inputs::CircuitInputs,
+    substrate_account::{DualExitAccount, SubstrateAccount},
+};
+use wormhole_circuit::{
+    unspendable_account::UnspendableAccount, zk_merkle_proof::ZkMerkleProofData,
+};
+
+pub struct WormholeProver {
+    pub circuit_data: ProverCircuitData<F, C, D>,
+    partial_witness: PartialWitness<F>,
+    targets: Option<CircuitTargets>,
+}
+
+/// Redacting `Debug`: after [`WormholeProver::commit`], `partial_witness`
+/// holds every private witness value — including the raw spend secret written
+/// by `Nullifier::fill_targets` — so it must never reach logs, error
+/// contexts, or telemetry via `{:?}`. `circuit_data` is public circuit
+/// structure but far too large to print usefully.
+impl core::fmt::Debug for WormholeProver {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("WormholeProver")
+            .field("circuit_data", &"[ProverCircuitData]")
+            .field("partial_witness", &"[REDACTED]")
+            .field("committed", &self.targets.is_none())
+            .finish()
+    }
+}
+
+/// Builds a fresh [`WormholeProver`] with the default leaf circuit configuration (non-ZK).
+///
+/// Note: Leaf proofs use non-ZK config because they're only verified by the aggregator
+/// (not on-chain). This improves proving performance without compromising security.
+pub fn build_fresh() -> WormholeProver {
+    WormholeProver::new(zk_circuits_common::circuit::wormhole_leaf_circuit_config())
+        .expect("canonical wormhole leaf circuit config is valid")
+}
+
+impl WormholeProver {
+    /// Creates a new [`WormholeProver`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when `config` fails the shared structural policy
+    /// (`zk_circuits_common::circuit::validate_circuit_config`): an unchecked
+    /// config would otherwise panic deep inside plonky2 mid-construction or
+    /// drive exponential allocations during the circuit build.
+    pub fn new(config: CircuitConfig) -> anyhow::Result<Self> {
+        let wormhole_circuit = WormholeCircuit::new(config)?;
+        let partial_witness = PartialWitness::new();
+
+        let targets = Some(wormhole_circuit.targets());
+        let circuit_data = wormhole_circuit.build_prover();
+
+        Ok(Self {
+            circuit_data,
+            partial_witness,
+            targets,
+        })
+    }
+
+    /// Commits the provided [`CircuitInputs`] to the circuit by filling relevant targets.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the prover has already commited to inputs previously.
+    pub fn commit(mut self, circuit_inputs: &CircuitInputs) -> anyhow::Result<Self> {
+        let Some(targets) = self.targets.take() else {
+            bail!("prover has already commited to inputs");
+        };
+
+        fill_witness(&mut self.partial_witness, circuit_inputs, &targets)?;
+        Ok(self)
+    }
+
+    /// Prove the circuit with commited values. It's necessary to call [`WormholeProver::commit`]
+    /// before running this function.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the prover has not commited to any inputs.
+    pub fn prove(self) -> anyhow::Result<ProofWithPublicInputs<F, C, D>> {
+        self.circuit_data
+            .prove(self.partial_witness)
+            .map_err(|e| anyhow!("Failed to prove: {}", e))
+    }
+}
+
+/// Fill a partial witness with circuit inputs.
+///
+/// This is the single source of truth for witness filling logic, used by both
+/// `WormholeProver::commit` and the aggregator's dummy proof generation.
+///
+/// # Arguments
+/// * `pw` - The partial witness to fill
+/// * `circuit_inputs` - The circuit inputs containing both public and private data
+/// * `targets` - The circuit targets to fill
+pub fn fill_witness(
+    pw: &mut PartialWitness<F>,
+    circuit_inputs: &CircuitInputs,
+    targets: &CircuitTargets,
+) -> anyhow::Result<()> {
+    let proof_depth = circuit_inputs.private.zk_merkle_siblings.len();
+    if proof_depth > MAX_DEPTH {
+        bail!(
+            "ZK Merkle proof depth {} exceeds maximum supported depth {}",
+            proof_depth,
+            MAX_DEPTH
+        );
+    }
+
+    let nullifier = Nullifier::from(circuit_inputs);
+    let zk_merkle_proof = ZkMerkleProofData::try_from(circuit_inputs)?;
+    let unspendable_account = UnspendableAccount::from(circuit_inputs);
+    let exit_accounts = DualExitAccount {
+        exit_account_1: SubstrateAccount::from_bytes(
+            circuit_inputs.public.exit_account_1.as_slice(),
+        )?,
+        exit_account_2: SubstrateAccount::from_bytes(
+            circuit_inputs.public.exit_account_2.as_slice(),
+        )?,
+    };
+    let block_header = BlockHeader::try_from(circuit_inputs)?;
+
+    nullifier.fill_targets(pw, targets.nullifier.clone())?;
+    unspendable_account.fill_targets(pw, targets.unspendable_account.clone())?;
+    zk_merkle_proof.fill_targets(pw, targets.zk_merkle_proof.clone())?;
+    exit_accounts.fill_targets(pw, targets.exit_accounts)?;
+    block_header.fill_targets(pw, targets.block_header.clone())?;
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wormhole_circuit::inputs::{PrivateCircuitInputs, PublicCircuitInputs};
+
+    /// After `commit`, the `PartialWitness` holds every private witness value,
+    /// including the raw spend secret written by `Nullifier::fill_targets`.
+    /// Formatting a committed prover with `{:?}` must not expose any of it.
+    #[test]
+    fn committed_prover_debug_does_not_leak_private_witness() {
+        let inputs = CircuitInputs {
+            private: PrivateCircuitInputs {
+                secret: [0xAB; 32].try_into().unwrap(),
+                transfer_count: 0,
+                unspendable_account: [0xCD; 32].try_into().unwrap(),
+                parent_hash: [5u8; 32].try_into().unwrap(),
+                state_root: [3u8; 32].try_into().unwrap(),
+                extrinsics_root: [4u8; 32].try_into().unwrap(),
+                digest: [0xEE; 110],
+                zk_tree_root: [0u8; 32],
+                zk_merkle_siblings: vec![],
+                zk_merkle_positions: vec![],
+            },
+            public: PublicCircuitInputs {
+                asset_id: 0,
+                output_amount_1: 900,
+                output_amount_2: 99,
+                volume_fee_bps: 10,
+                nullifier: [1u8; 32].try_into().unwrap(),
+                block_hash: [0u8; 32].try_into().unwrap(),
+                exit_account_1: [2u8; 32].try_into().unwrap(),
+                exit_account_2: [3u8; 32].try_into().unwrap(),
+                block_number: 1,
+                input_amount: 1000,
+            },
+        };
+
+        let prover = build_fresh().commit(&inputs).unwrap();
+        let dump = format!("{:?}", prover);
+        // Spend secret felts: each 8-byte chunk of [0xAB; 32].
+        assert!(
+            !dump.contains("12370169555311111083"),
+            "raw secret leaked from committed prover Debug output"
+        );
+        // Unspendable (deposit) account felts: each 8-byte chunk of [0xCD; 32].
+        assert!(
+            !dump.contains("14829735431805717965"),
+            "deposit account leaked from committed prover Debug output"
+        );
+    }
+}

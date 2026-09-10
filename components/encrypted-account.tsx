@@ -1,3 +1,4 @@
+import { EncryptedWithdrawal } from './encrypted-withdrawal';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, Check, Copy, LockKeyhole, LoaderCircle, RefreshCw, ShieldCheck } from 'lucide-react';
 import { t, useLanguage, locale } from '@/lib/i18n';
@@ -5,12 +6,13 @@ import { EncryptedWallet } from '@/lib/wormhole/client';
 import { scanWormholeBalance, type WormholeBalanceSnapshot, type WormholeScanProgress } from '@/lib/wormhole/data';
 import { addressBytes, formatAmount } from '@/lib/quantus/protocol';
 const explorer = (address:string) => 'https://explorer.quantus.com/accounts/'+encodeURIComponent(address);
-export function EncryptedAccount({active,onUnlock}:{active:boolean;onUnlock:()=>void}) {
+export function EncryptedAccount({active,onUnlock,onContinue}:{active:boolean;onUnlock:()=>void;onContinue:(address:string,index:number)=>void}) {
   useLanguage();
   const [expected,setExpected] = useState('');
   const [consent,setConsent] = useState(false);
   const [opened,setOpened] = useState(false);
   const [busy,setBusy] = useState(false);
+  const [withdrawBusy,setWithdrawBusy] = useState(false);
   const [error,setError] = useState('');
   const [note,setNote] = useState('');
   const [copied,setCopied] = useState('');
@@ -35,14 +37,14 @@ export function EncryptedAccount({active,onUnlock}:{active:boolean;onUnlock:()=>
     return()=>{window.removeEventListener('pagehide',hide);generation.current++;scan.current?.abort();wallet.current?.close();};
   },[lock]);
   useEffect(()=>{
-    if(!opened)return;
+    if(!opened||withdrawBusy)return;
     let timer:ReturnType<typeof setTimeout>;
     const reset=()=>{clearTimeout(timer);timer=setTimeout(()=>{lock();setNote('长时间未操作，钱包已自动锁定。');},5*60_000);};
     reset();window.addEventListener('pointerdown',reset);window.addEventListener('keydown',reset);
     return()=>{clearTimeout(timer);window.removeEventListener('pointerdown',reset);window.removeEventListener('keydown',reset);};
-  },[opened,lock]);
+  },[opened,withdrawBusy,lock]);
   async function restore(existing=false) {
-    if(scan.current)return;
+    if(scan.current||withdrawBusy)return;
     setError('');setNote('');setBalance(null);setReceive('');
     let local=wallet.current;
     let words='';
@@ -78,7 +80,7 @@ export function EncryptedAccount({active,onUnlock}:{active:boolean;onUnlock:()=>
   const progressText=progress?.stage==='network'?'正在核对主网与索引器…':progress?.stage==='addresses'?'正在扫描收款和找零地址…':progress?.stage==='transfers'?'正在核对转入记录…':'正在核对已花费标记…';
   return <section className="encrypted-account" aria-label={t('加密账户')}>
     <div className="encrypted-intro"><LockKeyhole size={22}/><div><h2>{t('Encrypted Account · 加密账户')}</h2><p>{t('使用与官方钱包相同的助记词，自动恢复收款和找零地址，无需填写普通账户序号。')}</p></div></div>
-    <div className="notice"><ShieldCheck size={18}/><span>{t('此入口支持本地恢复、收款地址和余额查询。加密账户转出需要独立的零知识证明；浏览器转出尚未开放，请通过官方钱包发送。')}</span></div>
+    <div className="notice"><ShieldCheck size={18}/><span>{t('本地恢复加密账户并查询余额。转出分两步：先转到本人普通账户，最终确认后再进行普通转账。')}</span></div>
     {error&&<p className="notice error" role="alert">{t(error)}</p>}
     {note&&<p className="notice" role="status">{t(note)}</p>}
     <div className="encrypted-grid"><section className="encrypted-card">
@@ -87,10 +89,10 @@ export function EncryptedAccount({active,onUnlock}:{active:boolean;onUnlock:()=>
       <input id="encrypted-expected" className="address-input" value={expected} onChange={e=>setExpected(e.target.value)} disabled={busy||opened} placeholder={t('在 Encrypted Account 的接收页面复制 qz… 地址')} autoComplete="off"/>
       {!opened&&<><label className="field-label" htmlFor="encrypted-phrase">{t('助记词')}</label><textarea id="encrypted-phrase" ref={phrase} className="seed-input" placeholder={t('在这里输入你的助记词，以空格分隔')} disabled={busy} autoComplete="off" autoCorrect="off" spellCheck={false} data-1p-ignore data-lpignore="true"/><p className="micro">{t('助记词和加密秘密仅在本地 Worker 中处理，不保存到浏览器存储。不支持额外 BIP39 密码。')}</p>
       <label className="encrypted-consent"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)} disabled={busy}/><span>{t('我了解：查询会向 Quantus 官方索引器发送派生的公开地址，向官方节点查询花费标记；服务方可能关联这些请求与我的 IP。助记词不会发送。')}</span></label></>}
-      <div className="encrypted-actions">{!opened?<button className="primary full" type="button" disabled={busy||!consent||!expected.trim()} onClick={()=>void restore()}>{busy?<LoaderCircle size={17} className="spin"/>:<LockKeyhole size={17}/>} {t(busy?'正在本地恢复':'恢复并扫描加密账户')}</button>:<button className="secondary full" type="button" disabled={busy} onClick={()=>void restore(true)}><RefreshCw size={16}/> {t('重新扫描余额')}</button>}
+      <div className="encrypted-actions">{!opened?<button className="primary full" type="button" disabled={busy||!consent||!expected.trim()} onClick={()=>void restore()}>{busy?<LoaderCircle size={17} className="spin"/>:<LockKeyhole size={17}/>} {t(busy?'正在本地恢复':'恢复并扫描加密账户')}</button>:<button className="secondary full" type="button" disabled={busy||withdrawBusy} onClick={()=>void restore(true)}><RefreshCw size={16}/> {t('重新扫描余额')}</button>}
       {(opened||busy)&&<button className="secondary full" type="button" onClick={()=>{lock();setNote('钱包已锁定。');}}>{t(busy?'停止扫描并锁定':'锁定钱包')}</button>}</div>
       {busy&&<p className="micro" role="status">{t(progressText)} {progress?.scannedCount??progress?.transferCount??''}</p>}
-      <p className="micro">{t('5 分钟未操作、离开加密账户页面或关闭网页时会锁定。语言切换不会改变账户。')}</p>
+      <p className="micro">{t('5 分钟未操作、离开加密账户页面或关闭网页时会锁定；本地证明进行时暂停闲置计时。语言切换不会改变账户。')}</p>
     </section><section className="encrypted-card">
       <span className="balance-label">{t('已核对的加密余额（费用与零头扣除前）')}</span>
       <div className="balance-number">{balance?formatAmount(balance.balancePlanck):'—'}<span>QTC</span></div>
@@ -104,6 +106,7 @@ export function EncryptedAccount({active,onUnlock}:{active:boolean;onUnlock:()=>
       </>}
       <p className="micro">{t('余额合并收款与找零两个序列的未花费记录，不等于某一个地址的普通余额。按每个分支连续 20 个未使用地址停止发现；跳过更大空隙的自定义账户可能无法恢复。')}</p>
     </section></div>
-    <details className="encrypted-details"><summary>{t('恢复规则与支持范围')}</summary><p>{t('与官方 Encrypted Account 路径一致：收款 m/44\'/189189189\'/0\'/0\'/n\'，找零 m/44\'/189189189\'/0\'/1\'/n\'。默认每个分支最多扫描 1000 个地址；达到上限或索引记录缺失会停止并提示，不展示不完整余额。')}</p><p>{t('此处不收取查询费用，不签名、不广播交易。当前加密账户转出请使用官方 Quantus 钱包；普通账户转账功能不适用于该账户。')}</p><a href="https://docs.quantus.com/deep-dives/wormhole/" target="_blank" rel="noopener noreferrer">{t('了解官方 Wormhole 机制')} <ArrowUpRight size={14}/></a></details>
+    <EncryptedWithdrawal wallet={opened?wallet.current:null} snapshot={balance} onLock={lock} onBusyChange={setWithdrawBusy} onContinue={onContinue}/>
+    <details className="encrypted-details"><summary>{t('恢复规则与支持范围')}</summary><p>{t('与官方 Encrypted Account 路径一致：收款 m/44\'/189189189\'/0\'/0\'/n\'，找零 m/44\'/189189189\'/0\'/1\'/n\'。默认每个分支最多扫描 1000 个地址；达到上限或索引记录缺失会停止并提示，不展示不完整余额。')}</p><p>{t('余额查询不收费、不提交交易。只有在下方核对转出金额、费用并确认后，才会在本地生成证明并提交第一步交易。')}</p><a href="https://docs.quantus.com/deep-dives/wormhole/" target="_blank" rel="noopener noreferrer">{t('了解官方 Wormhole 机制')} <ArrowUpRight size={14}/></a></details>
   </section>;
 }

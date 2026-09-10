@@ -1,19 +1,26 @@
-# Rebuild the source package
+# Rebuild both browser modules
 
-This artifact was built with Rust 1.98.1, wasm32-unknown-unknown standard library, and wasm-bindgen CLI 0.2.114 on macOS arm64. The source is portable; no Apple APIs are used.
+The source was tested using Rust 1.98.1, target `wasm32-unknown-unknown`, wasm-bindgen CLI **0.2.114**, and Node 24 on macOS arm64. The adapter uses portable Rust; browser proofs do not require threads, SharedArrayBuffer, a server, or a GPU.
 
-Install Rust through its official distribution, add target `wasm32-unknown-unknown`, and install/download the official wasm-bindgen CLI **0.2.114** for your platform. Then, from this source directory:
+Install Rust and the WebAssembly target through the official Rust distribution, and install the official wasm-bindgen CLI 0.2.114 for your platform. Build tools themselves are not included. From this directory:
 
 ```sh
-mkdir -p .cargo
-cp cargo-vendor-config.toml .cargo/config.toml
-cargo test --release --locked --offline
-cargo build --release --locked --offline --target wasm32-unknown-unknown
-wasm-bindgen target/wasm32-unknown-unknown/release/quantus_browser_crypto.wasm --target web --out-dir pkg-web
-wasm-bindgen target/wasm32-unknown-unknown/release/quantus_browser_crypto.wasm --target nodejs --out-dir pkg-node
-node test-node.cjs
+rustup target add wasm32-unknown-unknown
+# Install wasm-bindgen-cli 0.2.114 separately, or put its official binary on PATH.
+bash build.sh
 ```
 
-`vendor/` contains every dependency in `Cargo.lock`, including third-party license files. The Rust toolchain and wasm-bindgen CLI executables themselves are ordinary build tools and are not bundled. The workspace `build.sh` is a convenience for the original task's isolated toolchain layout; the commands above work with tools installed elsewhere.
+`build.sh` uses `cargo-vendor-config.toml` explicitly and `--locked --offline` for every Cargo operation. The complete dependency sources and their original licenses are in `vendor/`. No registry access is needed after installing the tools. `QTC_CARGO` and `QTC_WASM_BINDGEN` may name tool executables outside this directory. `CARGO_TARGET_DIR` may name an external build cache; it is not added to the source package. The script does not modify `HOME`, `RUSTUP_HOME` or `CARGO_HOME`.
 
-Serve both generated `pkg-web/quantus_browser_crypto.js` and `pkg-web/quantus_browser_crypto_bg.wasm` together. The page must never send its input phrase to a server. Do not fund the published test mnemonic.
+The script builds these separately from the same crate:
+
+1. Default features: `quantus_browser_crypto` for normal account derivation and signing.
+2. Feature `wormhole-prover`: `quantus_wormhole_crypto` for the opaque encrypted seed session and canonical local proof creation.
+
+The heavier build requires `--cfg getrandom_backend="wasm_js"` for the official prover's browser randomness. The script supplies this setting and remaps the source root to avoid embedding the developer's absolute path. Native tests and actual generated Node WASM tests run before completion, including the public synthetic self-withdrawal fixture and rejection checks. Test fixtures are compromised public vectors: never fund them.
+
+Outputs are `pkg-web/` (browser glue, WASM and declarations) and `pkg-node/` (Node test bindings). After review, copy each module's `.js`, `.d.ts`, and `_bg.wasm` into the site's `public/crypto/`; do not copy Node bindings. Keep the matching `worker.js` from the website repository. Run the website's source packaging and hash verification scripts before release. Changing Rust, LLVM, wasm-bindgen, profile settings, or source-path layout may change binary hashes; the current published hashes identify reviewed artifacts and are not a claim of independent bit-for-bit reproduction.
+
+The proof is generated from the vendored circuit definitions. No external `prover.bin`, trusted secret setup material, or downloaded proof verifier is loaded. At aggregation time the adapter checks SHA-256 of its canonical common/verifier serialization against bytes embedded in the pinned mainnet runtime. The web client separately checks live runtime code and finalized state before proof generation and submission.
+
+A Chrome 152 test using the actual Worker and the published-style web WASM generated a one-input, seven-slot private batch in approximately 42 seconds with about 903 MiB of WASM linear memory. More inputs and slower hardware can take longer. Terminate the Worker to cancel computation and release its retained memory. Cancellation after transaction submission cannot reverse a chain transaction.
