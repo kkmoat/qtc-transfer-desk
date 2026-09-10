@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { ArrowUpRight, Wallet, ShieldCheck, LockKeyhole, ChevronRight, RefreshCw, Copy, Check, AlertCircle, LoaderCircle, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { MiningCalculator } from '@/components/mining-calculator';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -21,6 +22,8 @@ const explorer = (address:string)=>'https://explorer.quantus.com/accounts/'+enco
 function message(e:unknown){return e instanceof Error?e.message:'操作未完成，请重试。';}
 
 export default function Home(){
+ const [view,setView]=useState<'transfer'|'mining'>(()=>typeof window!=='undefined'&&window.location.hash==='#mining'?'mining':'transfer');
+ useEffect(()=>{const changed=()=>setView(window.location.hash==='#mining'?'mining':'transfer');window.addEventListener('hashchange',changed);return()=>window.removeEventListener('hashchange',changed);},[]);
  const [endpoint,setEndpoint]=useState<string>(RPC_URLS[0]);
  const [account,setAccount]=useState<Account|null>(null);
  const [wallet,setWallet]=useState<OpenWallet|null>(null);
@@ -116,7 +119,8 @@ export default function Home(){
  },[endpoint]);
 
  return <div className="desk"><header className="topbar"><a className="wordmark" href="/"><span className="brandmark">Q</span><span>QTC<span className="wordmark-light"> 转账台</span></span></a><div className="network"><span className="network-dot"/>Quantus Mainnet</div><a className="quiet-link" href="https://explorer.quantus.com" target="_blank" rel="noreferrer">区块浏览器 <ArrowUpRight size={16}/></a></header>
- <main className="workspace"><div className="page-heading"><div><span className="eyebrow">QUANTUS / TRANSFER</span><h1>QTC 主网转账</h1></div><div className="heading-links"><a className="author-link" href="https://x.com/kkmoat" target="_blank" rel="noopener noreferrer" aria-label="作者 X：@kkmoat，在新标签页打开">作者 X：<strong>@kkmoat</strong><ArrowUpRight size={17} aria-hidden="true"/></a><span className="session-label"><LockKeyhole size={16}/> 本地签名</span></div></div>
+ <main className="workspace"><nav className="desk-navigation" aria-label="工具导航"><a href="#transfer" aria-current={view==='transfer'?'page':undefined}>QTC 转账{record&&!complete(record)?' · 进行中':''}</a><a href="#mining" aria-current={view==='mining'?'page':undefined}>挖矿成本计算器</a></nav><div className="page-heading"><div><span className="eyebrow">{view==='mining'?'QUANTUS / MINING':'QUANTUS / TRANSFER'}</span><h1>{view==='mining'?'算清每一枚 QTC 的成本':'QTC 主网转账'}</h1>{view==='mining'&&<p className="mining-subtitle">配置你的设备，看看当前算力下的产量、成本与盈亏。</p>}</div><div className="heading-links"><a className="author-link" href="https://x.com/kkmoat" target="_blank" rel="noopener noreferrer" aria-label="作者 X：@kkmoat，在新标签页打开">作者 X：<strong>@kkmoat</strong><ArrowUpRight size={17} aria-hidden="true"/></a><span className="session-label"><LockKeyhole size={16}/> {view==='mining'?'本地计算 · 无需钱包':'本地签名'}</span></div></div>
+ <div className="desk-view" hidden={view!=='transfer'}>
  {error&&!modal&&<div className="notice error" role="alert"><AlertCircle size={18}/><span>{error}</span></div>}{note&&<div className="notice" role="status"><ShieldCheck size={18}/><span>{note}</span></div>}
  <div className="desk-grid"><aside className="account-panel"><div className="panel-label"><span>{wallet?'已打开付款钱包':account?'公开地址查询':'付款账户'}</span><Wallet size={19}/></div><div className="balance-label">账户余额</div><div className="balance-number">{account?formatAmount(account.free):'—'}<span>QTC</span></div>
  {account?<div className="account-address"><span title={account.address}>{short(account.address)}</span><button aria-label="复制付款地址" onClick={()=>copy(account.address)}>{copied===account.address?<Check size={15}/>:<Copy size={15}/>}</button><a href={explorer(account.address)} target="_blank" rel="noreferrer" aria-label="在区块浏览器查看付款账户"><ArrowUpRight size={16}/></a></div>:<p className="subtle">打开钱包或查询公开地址，读取主网余额。</p>}
@@ -146,6 +150,8 @@ export default function Home(){
    {history.length>historyLimit&&<Button className="secondary history-more" onClick={()=>setHistoryLimit(n=>n+10)}>查看更多（已显示 {historyLimit} / {history.length} 笔）</Button>}
   </>}
  </section>
+ </div>
+ <div className="desk-view" hidden={view!=='mining'}><MiningCalculator active={view==='mining'}/></div>
  <footer><span>独立社区工具 · 非 Quantus 官方产品 · 未经独立安全审计</span><div className="footer-links"><a href="https://github.com/kkmoat/qtc-transfer-desk" target="_blank" rel="noopener noreferrer">GitHub 开源</a><a href="/source/quantus-browser-crypto-source.zip" download>签名组件源码</a><a href="/source/LICENSE.txt" target="_blank">GPL-3.0</a><div className="footer-contact"><button type="button" className="contact-button" onClick={copyContact} aria-label={`联系我们，复制微信号 ${CONTACT_WECHAT}`} title={`点击复制微信号：${CONTACT_WECHAT}`}>联系我们 <Copy size={14} aria-hidden="true"/></button><span className="contact-status" role="status" aria-live="polite">{contactMessage}</span></div></div></footer></main>
  <Dialog open={historyDetailHash!==null} onOpenChange={open=>{if(!open)closeHistory();}}><DialogContent className="wallet-dialog history-dialog"><DialogHeader><DialogTitle>转账记录详情</DialogTitle><DialogDescription>这是本地保存的交易信息。重新查询只核对链上结果，不会再次付款。</DialogDescription></DialogHeader>
  {historyDetail?<><div className="receipt-amount">{formatAmount(BigInt(historyDetail.amount))} <span>QTC</span></div><p className="history-detail-state" role="status">{historyTracking===historyDetail.hash?'正在查询链上结果…':`上次查询结果：${receiptStatus(historyDetail)}`}</p><p className="micro">{historyDetail.message}</p>

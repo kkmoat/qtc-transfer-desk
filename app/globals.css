@@ -1,5 +1,6 @@
 @import "tailwindcss" source(none);
 @import "tw-animate-css";
+@import "./mining.css";
 @import "../vendor/shadcn-tailwind-4.13.0.css";
 @source ".";
 @source "../components";
