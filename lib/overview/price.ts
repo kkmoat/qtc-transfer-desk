@@ -1,7 +1,6 @@
 // Official public feed: github.com/safetrade-exchange/example-client (ws.py, manager.py).
 // QUAN is Quantus on SafeTrade. QTC/USDT is an unrelated currency and is never a fallback.
 export const SAFETRADE_MARKET = 'quanusdt';
-export const SAFETRADE_LINK = 'https://safetrade.com/exchange/QUAN-USDT?type=basic';
 export const SAFETRADE_WS = 'wss://safe.trade/api/v2/websocket/public';
 export type PriceSnapshot = { last: string; high: string | null; low: string | null; change: number | null; volumeUsdt: string | null; amountQuan: string | null; fetchedAt: number };
 function decimal(value: unknown, positive = false): string | null {
@@ -25,7 +24,7 @@ export function fetchPriceSnapshot(signal: AbortSignal, makeSocket: (url: string
   return new Promise((resolve, reject) => {
     if (signal.aborted) { reject(new DOMException('Aborted','AbortError')); return; }
     let done = false, socket: WebSocket | undefined;
-    const finish = (result?: PriceSnapshot, error = new Error('SafeTrade 行情暂不可用，请稍后刷新或打开交易所查看。')) => {
+    const finish = (result?: PriceSnapshot, error = new Error('SafeTrade 行情暂不可用，请稍后刷新。')) => {
       if (done) return; done = true; clearTimeout(timer); signal.removeEventListener('abort', abort);
       if (socket) { socket.onopen = null; socket.onmessage = null; socket.onerror = null; socket.onclose = null; try { socket.close(); } catch { /* cleanup must not keep the request pending */ } }
       if (result) resolve(result); else reject(error);
