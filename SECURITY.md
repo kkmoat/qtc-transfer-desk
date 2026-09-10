@@ -64,3 +64,8 @@ QTC 转账台是独立社区工具，**未接受独立安全审计，也不保�
 - 最终成功要求规范区块中的相同交易、ExtrinsicSuccess、ProofVerified 的所有 nullifier 和净值、以及本人账户真实转入事件。ExitMintFailed / SegmentsDenied 优先视作失败，不能假定输入可再次消费。
 - 证明使用官方规范电路重建，无需信任下载的序列化 prover。新大模块仅在打开加密钱包时加载，普通转账维持轻量模块。所有脚本/WASM 同源，Worker `connect-src 'self'`，无秘密代理或云证明服务。
 - 自动验证仅用公开已泄露测试助记词、合成证明输入以及拦截的广播响应。不要给测试账户充值；没有执行真实用户资金转账。
+
+
+### Public overview data
+
+The overview reads finalized aggregate supply from the existing official RPC allowlist, and public `global.tickers` from `wss://safe.trade/api/v2/websocket/public`. It never reads or submits wallet state. Only `quanusdt` can become the Quantus price. Network failures are not converted to zero or cached values labeled as live. Response sizes, number formats, mainnet identity, and fixed snapshot hashes are validated. The document allows that one public WebSocket path; the isolated signing Worker still has `connect-src 'self'`. No new server endpoint, third-party script, or API credential is added.

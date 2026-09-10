@@ -210,3 +210,18 @@ tests/                  本地测试、公开测试向量及主网元数据
 项目采用 **GPL-3.0-only**，完整文本见 [LICENSE](LICENSE)。第三方代码保留各自的许可证、版权和声明，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与 `crypto/vendor/`。
 
 普通问题可提交 [GitHub Issue](https://github.com/kkmoat/qtc-transfer-desk/issues)，附上版本、浏览器和去除隐私后的复现步骤。涉及漏洞或敏感信息请先阅读 [SECURITY.md](SECURITY.md)，不要公开助记词、私钥或可被直接利用的攻击细节。
+
+
+## QTC 总览
+
+打开 [QTC 总览](https://www.qtc-transfer.xyz/#overview)，可查看供应上限、最终确认区块的当前净发行量、挖矿净新增，以及 SafeTrade QUAN/USDT 公开行情。中英文均可使用，无需打开钱包。
+
+- 最大供应量为 21,000,000 QTC，依据 [Quantus 官方白皮书 v0.4.1](https://www.quantus.com/whitepaper/v0.4.1/)。
+- 供应直接读取官方主网 `Balances.TotalIssuance`（u128 小端，12 位小数），固定最终确认区块，验证主网 genesis。创世链上发行量为 5,670,000.001 QTC（含初始化余额）。
+- “已挖出 · 净新增”是当前净发行量减去创世发行量，受销毁影响，既不是累计新铸量、累计矿工奖励，也不是流通量。加密账户资金已包含在总发行口径中，不另行加总。
+- QUAN 是 Quantus 在 SafeTrade 的交易代码；**不使用 QTC/USDT（另一项目）**。行情使用 [SafeTrade 官方客户端](https://github.com/safetrade-exchange/example-client) 所示 `global.tickers` 公开推送，只解析 `quanusdt`。价格和成交额以 USDT 计，成交量以 QUAN 计。
+- 行情卡显著提示“市场深度较小”，展示的是最近成交价，不承诺可成交价格，不把 USDT 直接当 USD。报价获取时间不是实际成交时间。
+- 两种数据各自更新；每分钟刷新，仅页面可见且总览打开时请求。读取失败保留明确标记的上次数据，没有数据时显示不可用；不内置演示价格或从其他币种补值。
+- 已在浏览器中通过生产 CSP 验证真实 QUAN/USDT 行情推送。部分网络或交易所访问限制仍可能导致报价不可用，此时可打开交易所行情页查看。
+
+总览完全在浏览器执行，不新增后端、API 密钥或远程 JavaScript。只在文档 CSP 增加指定的 SafeTrade 公开 WebSocket 路径；签名 Worker 的 CSP、加密组件与转账费率不变。
