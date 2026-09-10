@@ -25,12 +25,29 @@ export class SecretHandle {
     readonly scheme: string;
 }
 
+/**
+ * An official HD seed retained only inside the local Worker/WASM session.
+ * No mnemonic, seed, secret or first-hash getter is exported.
+ */
+export class WormholeSession {
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
+    accountId(index: number, branch: number): Uint8Array;
+    clear(): void;
+    computeNullifier(index: number, branch: number, transfer_count: string, expected_address: string): Uint8Array;
+    deriveAddress(index: number, branch: number): string;
+    readonly cleared: boolean;
+}
+
 export function deriveAccount(mnemonic: string, scheme: string, account_index: number): SecretHandle;
 
 /**
  * Explicit canonical BIP44 path option for accounts created with custom HD indices.
  */
 export function deriveAccountAtPath(mnemonic: string, scheme: string, path: string): SecretHandle;
+
+export function openWormhole(mnemonic: string): WormholeSession;
 
 export function verifyPayload(public_key: Uint8Array, payload: Uint8Array, signature: Uint8Array, scheme: string, spec_version: number): boolean;
 
@@ -39,8 +56,10 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly __wbg_secrethandle_free: (a: number, b: number) => void;
+    readonly __wbg_wormholesession_free: (a: number, b: number) => void;
     readonly deriveAccount: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly deriveAccountAtPath: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number];
+    readonly openWormhole: (a: number, b: number) => [number, number, number];
     readonly secrethandle_accountId: (a: number) => [number, number];
     readonly secrethandle_address: (a: number) => [number, number];
     readonly secrethandle_clear: (a: number) => void;
@@ -50,6 +69,11 @@ export interface InitOutput {
     readonly secrethandle_scheme: (a: number) => [number, number];
     readonly secrethandle_signPayload: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly verifyPayload: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => number;
+    readonly wormholesession_accountId: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly wormholesession_clear: (a: number) => void;
+    readonly wormholesession_cleared: (a: number) => number;
+    readonly wormholesession_computeNullifier: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
+    readonly wormholesession_deriveAddress: (a: number, b: number, c: number) => [number, number, number, number];
     readonly __wbindgen_externrefs: WebAssembly.Table;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;

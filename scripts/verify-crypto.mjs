@@ -4,10 +4,11 @@ import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 
 export const CRYPTO_PINS = {
-  'crypto/quantus_browser_crypto_bg.wasm': '073d795f8d4a6c8cb95fa038bcd4bfff313de7906d6461800f756a4445fc4d48',
-  'crypto/quantus_browser_crypto.js': 'e1a99429b629b9e3f5714a7b595bf0ffa5ad26f76c98aeb0e5cdb1c76b9421c7',
-  'crypto/quantus_browser_crypto.d.ts': '0afda85e284d295342897db26163b45282fb76a70a0a0ce6e31f538cee886bf5',
-  'source/quantus-browser-crypto-source.zip': 'c33aa09f461f578cc07d7d573d7101d6314e424884c6dbf3067ea672e27e531d',
+  'crypto/quantus_browser_crypto.d.ts': 'be80289e967f71044240fe7701eb1f7aa8a9bba168bcc56d180f820cc6fe0783',
+  'crypto/quantus_browser_crypto.js': '33c927b772fb748b7aec53f900641a8423e397c3043b6a6539af4560ea16d758',
+  'crypto/quantus_browser_crypto_bg.wasm': '2429d540a27d986c4a02b2be5972ac6a0c6c9fbb616bc62f594195523b18578a',
+  'crypto/worker.js': '5a18496138e307350b1eb966ae145bb521b23d07f13c5da85fa058910c635ae8',
+  'source/quantus-browser-crypto-source.zip': 'edf9fdfd18a3cbfa11f99b917088dbfe2bd757b633d52c025d95b13c44f0701d',
 };
 
 export async function verifyCrypto(directory = 'public') {

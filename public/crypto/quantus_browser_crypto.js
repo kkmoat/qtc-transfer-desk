@@ -119,6 +119,98 @@ export class SecretHandle {
 if (Symbol.dispose) SecretHandle.prototype[Symbol.dispose] = SecretHandle.prototype.free;
 
 /**
+ * An official HD seed retained only inside the local Worker/WASM session.
+ * No mnemonic, seed, secret or first-hash getter is exported.
+ */
+export class WormholeSession {
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(WormholeSession.prototype);
+        obj.__wbg_ptr = ptr;
+        WormholeSessionFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        WormholeSessionFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_wormholesession_free(ptr, 0);
+    }
+    /**
+     * @param {number} index
+     * @param {number} branch
+     * @returns {Uint8Array}
+     */
+    accountId(index, branch) {
+        const ret = wasm.wormholesession_accountId(this.__wbg_ptr, index, branch);
+        if (ret[3]) {
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
+    }
+    clear() {
+        wasm.wormholesession_clear(this.__wbg_ptr);
+    }
+    /**
+     * @returns {boolean}
+     */
+    get cleared() {
+        const ret = wasm.wormholesession_cleared(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
+     * @param {number} index
+     * @param {number} branch
+     * @param {string} transfer_count
+     * @param {string} expected_address
+     * @returns {Uint8Array}
+     */
+    computeNullifier(index, branch, transfer_count, expected_address) {
+        const ptr0 = passStringToWasm0(transfer_count, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(expected_address, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.wormholesession_computeNullifier(this.__wbg_ptr, index, branch, ptr0, len0, ptr1, len1);
+        if (ret[3]) {
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        var v3 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v3;
+    }
+    /**
+     * @param {number} index
+     * @param {number} branch
+     * @returns {string}
+     */
+    deriveAddress(index, branch) {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.wormholesession_deriveAddress(this.__wbg_ptr, index, branch);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+}
+if (Symbol.dispose) WormholeSession.prototype[Symbol.dispose] = WormholeSession.prototype.free;
+
+/**
  * @param {string} mnemonic
  * @param {string} scheme
  * @param {number} account_index
@@ -155,6 +247,20 @@ export function deriveAccountAtPath(mnemonic, scheme, path) {
         throw takeFromExternrefTable0(ret[1]);
     }
     return SecretHandle.__wrap(ret[0]);
+}
+
+/**
+ * @param {string} mnemonic
+ * @returns {WormholeSession}
+ */
+export function openWormhole(mnemonic) {
+    const ptr0 = passStringToWasm0(mnemonic, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.openWormhole(ptr0, len0);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return WormholeSession.__wrap(ret[0]);
 }
 
 /**
@@ -207,6 +313,9 @@ function __wbg_get_imports() {
 const SecretHandleFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_secrethandle_free(ptr >>> 0, 1));
+const WormholeSessionFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_wormholesession_free(ptr >>> 0, 1));
 
 function getArrayU8FromWasm0(ptr, len) {
     ptr = ptr >>> 0;

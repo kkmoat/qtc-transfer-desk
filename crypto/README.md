@@ -29,6 +29,18 @@ handle.free();  // also release the wasm-bindgen object allocation; call once
 
 Signature result lengths: 65 = 3309, 87 = 4627 bytes. Public keys: 65 = 1952, 87 = 2592 bytes. For the current chain signature enum use variant 1 for 65 or 0 for 87, followed by signature then public key. This resource does not encode complete extrinsics, connect to RPC, broadcast, store data, or export secrets.
 
+## Encrypted accounts (Wormhole)
+
+`openWormhole(phrase)` returns a separate `WormholeSession` whose BIP39 seed is retained in an official zeroizing `SensitiveBytes64`. It exposes only:
+
+- `deriveAddress(index, branch)` and `accountId(index, branch)`; branch 0 receives, branch 1 is change.
+- `computeNullifier(index, branch, transferCountDecimal, expectedAddress)`, which verifies address ownership and accepts the full u64 count without floating-point conversion.
+- `clear()`, `free()`, and `cleared` for session lifecycle.
+
+Canonical paths are `m/44'/189189189'/0'/branch'/index'`, matching Quantus apps commit `76df7b06d7a092c9cdfb9a459f8effb9ddb5e737`. No secret, first hash, seed, or mnemonic getter is exposed. The Worker can return public addresses and nullifiers for read-only balance queries. It does not export proofs or enable encrypted withdrawals.
+
+The nullifier uses the official Poseidon construction. Tests cross-check both HD branches and full-width transfer counts against published `qp-wormhole-circuit 4.3.0` behavior; only the already-vendored Poseidon implementation is compiled into this small adapter. No proving dependencies were added. Ordinary ML-DSA signing remains separate.
+
 ## Sensitive memory
 
 The WASM handle holds the private key; JavaScript receives only public data and signatures. Incoming Rust mnemonic copies use `Zeroizing<String>` and are erased on return. The official keypair's secret storage erases on drop. Call `clear()` and `free()` in a `finally` block; a dedicated worker should also be terminated after use. JavaScript strings/DOM input remain managed by the browser and cannot be guaranteed erased by this module; clear the input and references immediately. This does not protect against malicious same-origin JavaScript, compromised browser extensions, or a compromised page.

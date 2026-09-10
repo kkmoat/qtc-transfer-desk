@@ -2,7 +2,7 @@ export const RPC_ORIGINS = ['https://rpc1-mainnet.quantus.com','https://rpc2-mai
 export const POOL_READ_URLS = ['terms','stats/mainnet','luck/mainnet','rounds/mainnet','chains'].map(path => 'https://quanpool.com/api/' + path);
 export const DOCUMENT_CSP = [
  "default-src 'self'", "script-src 'self' 'wasm-unsafe-eval'", "style-src 'self' 'unsafe-inline'",
- "img-src 'self' data:", "font-src 'self'", `connect-src 'self' ${RPC_ORIGINS.join(' ')} ${POOL_READ_URLS.join(' ')}`,
+ "img-src 'self' data:", "font-src 'self'", `connect-src 'self' ${RPC_ORIGINS.join(' ')} ${POOL_READ_URLS.join(' ')} https://sqm.quantus.com/v1/graphql`,
  "worker-src 'self'", "object-src 'none'", "base-uri 'none'", "form-action 'none'", "frame-ancestors 'none'",
 ].join('; ');
 export const WORKER_CSP = [

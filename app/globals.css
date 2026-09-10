@@ -30,3 +30,18 @@
 .referral-cta{display:flex;align-items:center;justify-content:center;gap:7px;flex:none;min-height:42px;padding:10px 15px;background:#f0c956;border-radius:8px;color:#211d13;font-size:13px;font-weight:600;white-space:nowrap}
 @media(max-width:600px){.referral-banner{margin-bottom:25px}.referral-banner>a{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;padding:17px}.referral-icon{width:34px;height:34px;border-radius:8px;align-self:start}.referral-icon svg{width:21px;height:21px}.referral-title strong{font-size:15px}.referral-title{gap:8px}.referral-code{display:block;margin-left:0}.referral-cta{grid-column:1/-1;font-size:13px}.referral-content p{margin-top:5px}}
 @media(max-width:360px){.desk-grid{grid-template-columns:minmax(0,1fr)}.account-panel,.transfer-panel{min-width:0}.steps{gap:5px;font-size:11px}.step{gap:4px}.step b{width:18px;height:18px;font-size:10px}}
+
+.language-switcher{display:flex;align-items:center;gap:5px;margin-left:auto;flex-shrink:0;color:var(--muted,#96a5b7);font-size:12px}
+.language-switcher button{border:0;background:none;color:inherit;padding:7px 5px;border-radius:6px;cursor:pointer;white-space:nowrap}
+.language-switcher button[aria-pressed="true"]{color:#ff8b57;background:#ff6b2814}
+.language-switcher button:focus-visible{outline:2px solid #ff8b57;outline-offset:2px}
+html[lang="en"] .desk-navigation a{white-space:normal}
+html[lang="en"] .account-detail{align-items:flex-start;gap:8px}
+html[lang="en"] .account-detail strong{flex-shrink:0}
+html[lang="en"] .mining-segment button{white-space:normal;line-height:1.4}
+html[lang="en"] .steps{gap:6px;font-size:11px}
+html[lang="en"] .network{margin-right:12px}
+@media(max-width:650px){.topbar{flex-wrap:wrap;gap:10px}.language-switcher{order:2}.topbar>.network{order:3;margin-right:auto}.topbar>.quiet-link{order:4}.language-switcher>svg{display:none}html[lang="en"] .account-detail{flex-wrap:wrap}html[lang="en"] .referral-cta{white-space:normal}}
+.encrypted-import-link{display:block;padding:12px;border:1px solid #69412c;background:#2a211a;color:#ffab80;border-radius:8px;font-size:13px}
+.language-switcher{color:#a4b6cd}
+@media(max-width:650px){.topbar{display:grid;grid-template-columns:1fr auto;height:auto;min-height:82px;padding-top:12px;padding-bottom:12px;gap:6px 12px}.topbar>.wordmark{grid-column:1;grid-row:1}.topbar>.language-switcher{grid-column:2;grid-row:1;margin-left:0;justify-self:end}.topbar>.network{grid-column:1 / -1;grid-row:2;justify-self:start;margin:0;font-size:11px}.language-switcher button{padding:6px}}

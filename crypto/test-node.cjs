@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict');
-const { deriveAccount, deriveAccountAtPath, verifyPayload } = require('./pkg-node/quantus_browser_crypto.js');
+const { deriveAccount, deriveAccountAtPath, verifyPayload, openWormhole } = require(process.env.QUANTUS_CRYPTO_NODE_MODULE || './pkg-node/quantus_browser_crypto.js');
 // Public, deliberately compromised official wallet fixture. Never fund it.
 const phrase = 'orchard answer curve patient visual flower maze noise retreat penalty cage small earth domain scan pitch bottom crunch theme club client swap slice raven';
 const cases = [
@@ -43,3 +43,27 @@ assert.throws(() => deriveAccount('not a real secret', 'ml-dsa-65', 0), /Invalid
 assert.throws(() => deriveAccount(phrase, 'bad', 0), /Expected ml-dsa/);
 assert.equal(verifyPayload(new Uint8Array(3), new Uint8Array(30), new Uint8Array(3), 'ml-dsa-65', 152), false);
 console.log('PASS: browser-compiled WASM node checks, both official HD vectors, four payload sizes, tamper/context/runtime rejection, clear/free.');
+
+const encrypted = openWormhole(phrase);
+const encryptedVectors = [
+  [0, 'qzpWh4AEtsgCyEbv4WBgFWnB9bcdF2L2jVDuyjXP9mSTyBaeU', '2cbb73e7f9fad1070f8e729eb8e2b55d05d844dfea6622e12a7884eec1fe5bdc'],
+  [1, 'qzpzPxvmRfsZEQDdnwQgMqd8hCNxA3xVAw7mM2isRZhMScZ5M', '8674c2c2042bbd4cda5021d2ad55cab5ad052651424f1fc35f64fc3901235bb7'],
+];
+for (const [branch, address, nullifier] of encryptedVectors) {
+  assert.equal(encrypted.deriveAddress(0, branch), address);
+  assert.equal(encrypted.accountId(0, branch).length, 32);
+  assert.equal(Buffer.from(encrypted.computeNullifier(0, branch, '0', address)).toString('hex'), nullifier);
+  assert.notEqual(Buffer.from(encrypted.computeNullifier(0, branch, '18446744073709551615', address)).toString('hex'), nullifier);
+  assert.notEqual(encrypted.deriveAddress(1, branch), address);
+  assert.throws(() => encrypted.computeNullifier(1, branch, '0', address), /mismatch/);
+  for (const invalid of ['', '-1', '1e3', '18446744073709551616']) assert.throws(() => encrypted.computeNullifier(0, branch, invalid, address), /transfer count/);
+}
+for (const field of ['secret', 'secretHex', 'firstHash', 'first_hash', 'seed', 'mnemonic']) assert.equal(field in encrypted, false);
+assert.throws(() => encrypted.deriveAddress(0, 2), /branch or index/);
+assert.throws(() => encrypted.deriveAddress(2147483648, 0), /branch or index/);
+encrypted.clear(); encrypted.clear();
+assert.equal(encrypted.cleared, true);
+assert.throws(() => encrypted.deriveAddress(0, 0), /locked/);
+encrypted.free();
+assert.throws(() => openWormhole('not a mnemonic'), /Invalid encrypted-account mnemonic/);
+console.log('PASS: encrypted two-branch HD vectors, u64 nullifiers, ownership/range checks, no secret getters, clear/free.');

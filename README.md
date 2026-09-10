@@ -5,6 +5,8 @@
 本项目是独立社区工具，**不是 Quantus 官方钱包，未经独立安全审计**。开源、本地签名和安全响应头能够帮助审查与降低部分风险，不能保证设备、浏览器、依赖或托管页面绝对安全。使用前请阅读 [安全说明](SECURITY.md)。
 
 - 在线使用：[www.qtc-transfer.xyz](https://www.qtc-transfer.xyz/)
+- 语言：页面右上角选择 **中文 / English**，偏好仅保存在本机 `qtc-language-v1`，切换不会改变账户、金额或服务费。
+- 加密账户：[Encrypted Account 恢复与余额查询](https://www.qtc-transfer.xyz/#encrypted)
 - 挖矿计算：[设备算力与每枚 QTC 成本](https://www.qtc-transfer.xyz/#mining)
 - 源码：[github.com/kkmoat/qtc-transfer-desk](https://github.com/kkmoat/qtc-transfer-desk)
 - 作者：[X · @kkmoat](https://x.com/kkmoat)
@@ -31,6 +33,27 @@
 6. 完成后点击“锁定钱包”。连续 5 分钟没有交互，或页面触发 `pagehide`，也会锁定钱包并终止签名 Worker。
 
 不要将助记词发给作者、客服、GitHub Issue 或聊天工具。项目中的公开测试助记词仅用于测试，任何人都能使用，不能向其派生地址存入资金。
+
+## 加密账户（Wormhole）
+
+打开 [加密账户页面](https://www.qtc-transfer.xyz/#encrypted)，从官方钱包 **Encrypted Account** 的接收页复制完整地址，再输入同一钱包的助记词。无需填写普通账户序号。助记词只传给本地 Worker，Rust 使用官方 `qp-rusty-crystals-hdwallet 4.1.1` 派生以下两条序列：
+
+- 收款：`m/44'/189189189'/0'/0'/n'`
+- 找零：`m/44'/189189189'/0'/1'/n'`
+
+用户同意查询说明后，浏览器向官方 `https://sqm.quantus.com/v1/graphql` 索引器查询派生公开地址的记录，并向官方 RPC 核对相同最终确认区块的 `Wormhole.TransferCount` 与 `UsedNullifiers`。花费标记在本地计算，seed、secret 和 first hash 不返回页面。索引器和 RPC 可关联这些查询及 IP，因此这不是匿名或离线查询。
+
+每个分支发现到连续 **20 个未使用地址**后停止，默认每分支上限 1000 地址，总转入记录上限 10000。缺页、错误网络、索引滞后、未知运行规则或达到扫描上限会报错，不将未知余额显示为 0。派生地址必须包含用户填写的接收地址，才展示恢复结果。
+
+显示的是**所标注最终确认区块上的未花费余额，扣除费用和量化零头之前**，不等于当前可立即支出的金额；近期转入和转出可能尚未反映。官方已确认的自定义大间隔地址不在自动恢复范围内。每次查询都重新核对，不持久缓存地址集合或加密余额。
+
+**当前支持恢复、收款地址和余额查询；加密账户浏览器转出尚未开放，请使用官方 Quantus 钱包。** Wormhole 转出需要独立的零知识证明，不能替换成普通 ML-DSA 签名。查询不收费、不签名、不广播交易。离开加密页面、手动锁定、5 分钟未操作或 `pagehide` 会终止其 Worker。
+
+## English interface
+
+Use **中文 / English** in the top-right corner. Transfers, fee confirmation, history, mining inputs/results, encrypted account recovery, and error messages are translated locally. No translation service is contacted. Only the language preference is saved; switching language does not change form values, wallet identity, or the **0.5%** regular-transfer service fee.
+
+The **Encrypted Account** view restores official Wormhole receiving/change addresses and checks balances at a finalized mainnet block. It currently supports **recovery, receiving addresses, and balance queries only**, not browser withdrawals. Public addresses are queried from the official indexer and spent markers from official RPC; operators may correlate requests with your IP. Recovery phrases and secret material remain in the local Worker and are not persisted. Use the official Quantus wallet to send from an encrypted account.
 
 ## 费用
 
