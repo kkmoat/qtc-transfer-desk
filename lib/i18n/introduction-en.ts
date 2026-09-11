@@ -36,6 +36,8 @@ export const INTRODUCTION_EN: Readonly<Record<string, string>> = {
   '关注 @QuantusNetwork，获取项目动态': 'Follow @QuantusNetwork for project updates',
   '官方 Telegram': 'Official Telegram',
   '加入 Quantus 官方社区讨论': 'Join the official Quantus community',
+  '场外实时OTC成交': 'Live OTC trades',
+  '查看场外实时OTC成交，在新标签页打开': 'View live OTC trades in a new tab',
   'Telegram 中文 Quantus 交流群': 'Quantus Chinese Telegram group',
   '加入 Telegram 中文 Quantus 交流群，在新标签页打开': 'Join the Quantus Chinese Telegram group in a new tab',
   '通过官网获取钱包下载入口': 'Find wallet downloads on the official website',

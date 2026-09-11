@@ -61,3 +61,7 @@ html[lang="en"] .network{margin-right:12px}
 .community-link:hover{background:#203c4a;border-color:#62a3c6;color:#e0f4ff}
 .community-link:focus-visible{outline:2px solid #7cc8ee;outline-offset:4px}
 @media(max-width:600px){.heading-actions{width:100%;justify-content:flex-start}}
+
+.otc-link{border-color:#3d7056;background:#172e23;color:#b9e6ce}
+.otc-link:hover{border-color:#75b28f;background:#244334;color:#e0f8e9}
+.otc-link:focus-visible{outline-color:#8fd3aa}
