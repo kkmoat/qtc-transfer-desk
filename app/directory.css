@@ -6,7 +6,7 @@
 .directory-row{display:grid;grid-template-columns:100px minmax(0,1fr);gap:16px;align-items:center;min-height:84px;padding:15px 20px}
 .directory-row h2{font-size:20px;font-weight:500;color:#f2ad83;margin:0;padding-right:16px;border-right:1px solid #314152;overflow-wrap:anywhere}
 .directory-links{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px 12px;align-items:center;min-width:0}
-.directory-links li{min-width:0}.directory-links a,.directory-qr-trigger{display:flex;align-items:center;justify-content:center;min-height:44px;width:100%;padding:8px 5px;border:0;border-radius:7px;background:transparent;color:#d4dfed;font:inherit;font-size:15px;text-align:center;line-height:1.6;overflow-wrap:anywhere;cursor:pointer}
+.directory-links li{min-width:0}.directory-links a,.directory-qr-trigger{display:flex;align-items:center;justify-content:flex-start;min-height:44px;width:100%;padding:8px 5px;border:0;border-radius:7px;background:transparent;color:#d4dfed;font:inherit;font-size:15px;text-align:left;line-height:1.6;overflow-wrap:anywhere;cursor:pointer}
 .directory-links a:hover,.directory-qr-trigger:hover{color:#ffbd97;background:#2a2824}.directory-links a:focus-visible,.directory-qr-trigger:focus-visible{outline:2px solid #ff986f;outline-offset:0;background:#2a2824}
 .wechat-qr-dialog{width:min(480px,calc(100vw - 28px));max-width:480px;max-height:90dvh;overflow-y:auto;background:#111b26;color:#d4dfed;border-color:#2e3d4f;padding:24px;gap:16px}
 .wechat-qr-dialog [data-slot=dialog-header]{padding-right:18px}.wechat-qr-dialog [data-slot=dialog-description]{color:#a9b9cc;line-height:1.7}
