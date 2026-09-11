@@ -7,7 +7,7 @@ import { SECURITY_HEADERS, WORKER_CSP } from './security-policy.mjs';
 const root = resolve('dist');
 const port = Number(process.env.PORT ?? 5174);
 if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid PORT');
-const mime = { '.xml': 'application/xml; charset=utf-8', '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.wasm': 'application/wasm', '.svg': 'image/svg+xml', '.txt': 'text/plain; charset=utf-8', '.zip': 'application/zip', '.json': 'application/json', '.ico': 'image/x-icon' };
+const mime = { '.jpg': 'image/jpeg', '.xml': 'application/xml; charset=utf-8', '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.wasm': 'application/wasm', '.svg': 'image/svg+xml', '.txt': 'text/plain; charset=utf-8', '.zip': 'application/zip', '.json': 'application/json', '.ico': 'image/x-icon' };
 const server = createServer(async (request, response) => {
   for (const { key, value } of SECURITY_HEADERS) response.setHeader(key, value);
   response.setHeader('Cache-Control', 'no-cache, must-revalidate');
