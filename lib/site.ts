@@ -24,8 +24,8 @@ const metadata = {
     en: { title: 'Quantus (QTC) Introduction & Resources | QTC123', description: 'Explore Quantus and QTC, post-quantum signatures, QPoW and Wormhole encrypted accounts, with links to the official whitepaper, documentation and source code.' },
   },
   overview: {
-    zh: { title: 'QTC 总览：价格、供应与市值参考｜QTC123', description: '查看 Quantus 主网发行量、流通量估算和 QTC 市值参考，了解 SafeTrade 的 QUAN/USDT 报价、24 小时行情及数据来源。' },
-    en: { title: 'QTC Price, Supply & Market Cap Overview | QTC123', description: 'View Quantus mainnet supply, estimated circulation and market cap references, with SafeTrade QUAN/USDT quotes, 24-hour market data and source details.' },
+    zh: { title: 'QTC 总览：价格、供应与市值参考｜QTC123', description: '查看 Quantus 主网发行量、流通量估算和 QTC 市值参考，了解 SafeTrade 的 QUANTUS/USDT 报价、24 小时行情及数据来源。' },
+    en: { title: 'QTC Price, Supply & Market Cap Overview | QTC123', description: 'View Quantus mainnet supply, estimated circulation and market cap references, with SafeTrade QUANTUS/USDT quotes, 24-hour market data and source details.' },
   },
   transfer: {
     zh: { title: 'QTC 主网转账与余额查询｜QTC123', description: '查询 Quantus 普通账户余额，在浏览器中本地签名并提交 QTC 转账；确认收款地址、金额和费用，查询交易状态与本地转账记录。' },

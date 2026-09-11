@@ -7,7 +7,7 @@ import {OVERVIEW_EN} from '../lib/i18n/overview-en.ts';
 import {translate} from '../lib/i18n/core.ts';
 const now=Date.now(),head='0x'+'ab'.repeat(32);
 const fixtures=()=>({genesis:GENESIS,head,properties:{tokenDecimals:12,tokenSymbol:'QTC'},header:{number:'0x52ca'},issuance:hex(little(GENESIS_SUPPLY_PLANCK+6484n*PLANCK+123456789123n,16)),genesisIssuance:hex(little(GENESIS_SUPPLY_PLANCK,16)),timestamp:hex(little(BigInt(now-22*60_000),8))});
-const sample=()=>({'global.tickers':{quanusdt:{last:'50.00',high:'88',low:'20',price_change_percent:'+66.67%',amount:'14.36',volume:'482.35'},qtcusdt:{last:'0.43'}}});
+const sample=()=>({'global.tickers':{quantususdt:{last:'50.00',high:'88',low:'20',price_change_percent:'+66.67%',amount:'14.36',volume:'482.35'},quanusdt:{last:'99.99'},qtcusdt:{last:'0.43'}}});
 test('finalized net supply includes genesis initialization and preserves all 12 decimal places',()=>{
  const s=parseSupplySnapshot(fixtures(),now,RPC_URLS[0]);assert.equal(MAX_SUPPLY_PLANCK,21000000000000000000n);assert.equal(s.genesisPlanck,5670000001000000000n);assert.equal(s.minedNetPlanck,6484123456789123n);assert.equal(s.totalPlanck-s.genesisPlanck,s.minedNetPlanck);assert.equal(s.blockHash,head);assert.equal(s.blockTime,now-22*60_000);
  const burned=parseSupplySnapshot({...fixtures(),issuance:hex(little(GENESIS_SUPPLY_PLANCK-1n,16))},now,RPC_URLS[0]);assert.equal(burned.minedNetPlanck,-1n,'burns must not be hidden by clamping to zero');
@@ -36,12 +36,12 @@ test('supply failover stays on official endpoints and errors never become zero s
  const seen:string[]=[];await assert.rejects(()=>fetchSupplySnapshot(new AbortController().signal,async url=>{seen.push(String(url));throw new Error('offline');}),/无法读取/);assert.deepEqual([...new Set(seen)],[...RPC_URLS]);
  const c=new AbortController();c.abort();await assert.rejects(()=>fetchSupplySnapshot(c.signal,async()=>{throw new Error('abort');}),{name:'AbortError'});
 });
-test('only the Quantus QUAN feed is used and quote/base volume units are not swapped',()=>{
- const p=parsePriceMessage(sample(),now)!;assert.equal(p.last,'50.00');assert.equal(p.volumeUsdt,'482.35');assert.equal(p.amountQuan,'14.36');assert.equal(p.change,66.67);assert.equal(p.fetchedAt,now);
- assert.equal(parsePriceMessage({'global.tickers':{qtcusdt:{last:'0.43'}}},now),null);
- for(const last of ['0','NaN','-1','1e8','<script>','Infinity']){const s=sample();s['global.tickers'].quanusdt.last=last;assert.throws(()=>parsePriceMessage(s,now));}
+test('only the current Quantus QUANTUS feed is used and quote/base volume units are not swapped',()=>{
+ const p=parsePriceMessage(sample(),now)!;assert.equal(p.last,'50.00');assert.equal(p.volumeUsdt,'482.35');assert.equal(p.amountQuantus,'14.36');assert.equal(p.change,66.67);assert.equal(p.fetchedAt,now);
+ for(const market of ['quanusdt','qtcusdt'])assert.equal(parsePriceMessage({'global.tickers':{[market]:{last:'0.43'}}},now),null);
+ for(const last of ['0','NaN','-1','1e8','<script>','Infinity']){const s=sample();s['global.tickers'].quantususdt.last=last;assert.throws(()=>parsePriceMessage(s,now));}
  for(const bad of [null,[],{},'ping'])assert.equal(parsePriceMessage(bad,now),null);
- const numeric=sample();Object.assign(numeric['global.tickers'].quanusdt,{last:50,volume:0});assert.equal(parsePriceMessage(numeric,now)?.last,'50');assert.equal(parsePriceMessage(numeric,now)?.volumeUsdt,'0');
+ const numeric=sample();Object.assign(numeric['global.tickers'].quantususdt,{last:50,volume:0});assert.equal(parsePriceMessage(numeric,now)?.last,'50');assert.equal(parsePriceMessage(numeric,now)?.volumeUsdt,'0');
 });
 class Socket {
  onopen:(()=>void)|null=null;onmessage:((event:{data:string})=>void)|null=null;onclose:(()=>void)|null=null;onerror:(()=>void)|null=null;sent:string[]=[];closed=false;
@@ -49,7 +49,7 @@ class Socket {
 }
 test('public feed subscribes only to public tickers and closes after one validated quote',async()=>{
  const socket=new Socket();const p=fetchPriceSnapshot(new AbortController().signal,url=>{assert.equal(url,SAFETRADE_WS);return socket as unknown as WebSocket;});socket.onopen!();assert.deepEqual(socket.sent.map(s=>JSON.parse(s)),[{event:'subscribe',streams:['global.tickers']}]);
- socket.onmessage!({data:JSON.stringify({'global.tickers':{qtcusdt:{last:'0.43'}}})});assert.equal(socket.closed,false);socket.onmessage!({data:JSON.stringify(sample())});assert.equal((await p).last,'50.00');assert.equal(socket.closed,true);
+ for(const market of ['quanusdt','qtcusdt']){socket.onmessage!({data:JSON.stringify({'global.tickers':{[market]:{last:'0.43'}}})});assert.equal(socket.closed,false);}socket.onmessage!({data:JSON.stringify(sample())});assert.equal((await p).last,'50.00');assert.equal(socket.closed,true);
 });
 test('feed errors and page cancellation close the socket without returning stale or zero quotes',async()=>{
  for(const abort of [true,false]){const c=new AbortController(),socket=new Socket(),p=fetchPriceSnapshot(c.signal,()=>socket as unknown as WebSocket);if(abort)c.abort();else socket.onerror!();await assert.rejects(p);assert.equal(socket.closed,true);assert.equal(socket.onmessage,null);}

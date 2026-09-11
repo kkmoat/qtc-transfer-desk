@@ -233,7 +233,7 @@ tests/                  本地测试、公开测试向量及主网元数据
 
 ## QTC 总览
 
-打开 [QTC 总览](https://qtc123.com/overview/)，可查看当前流通量估算、流通市值 MC、完全稀释估值 FDV、供应上限、当前净发行量、挖矿净新增，以及 SafeTrade QUAN/USDT 公开行情。中英文均可使用，无需打开钱包。
+打开 [QTC 总览](https://qtc123.com/overview/)，可查看当前流通量估算、流通市值 MC、完全稀释估值 FDV、供应上限、当前净发行量、挖矿净新增，以及 SafeTrade QUANTUS/USDT 公开行情。中英文均可使用，无需打开钱包。
 
 - 最大供应量为 21,000,000 QTC，依据 [Quantus 官方白皮书 v0.4.1](https://www.quantus.com/whitepaper/v0.4.1/)。
 - 供应直接读取官方主网 `Balances.TotalIssuance`（u128 小端，12 位小数），固定最终确认区块，验证主网 genesis。创世链上发行量为 5,670,000.001 QTC（含初始化余额）。
@@ -241,9 +241,9 @@ tests/                  本地测试、公开测试向量及主网元数据
 - “当前流通量（估算）”单独显示已发行量扣除未解锁分配后的可流通数量，包含初始流动性及已解锁资金。它不是独立机构认证的自由流通量，也不是交易所可售数量。
 - 解锁数量按同一最终确认区块的时间读取并计算 `Vesting.Schedules`，使用[主网解锁模块逻辑](https://github.com/Quantus-Network/chain/blob/f5828f0bd827f476cad299d0b092da128f863f5c/pallets/vesting/src/lib.rs)。扣除的是未解锁数量，已经解锁但未领取的部分计入估算流通。实际主网计划与白皮书简述不完全一致，因此不硬编码扣除 26%；数据异常或未适配的 runtime 版本不生成流通估算。
 - MC = 当前流通量估算 × 最近成交价；FDV = 21,000,000 × 最近成交价。均以 USDT 计价，用整数精度计算后四舍五入到分；它们不代表实际可变现金额。缺少行情时不填零，缺少流通量时不计算 MC；旧数据明确标记为非实时。
-- QUAN 是 Quantus 在 SafeTrade 的交易代码；**不使用 QTC/USDT（另一项目）**。行情使用 [SafeTrade 官方客户端](https://github.com/safetrade-exchange/example-client) 所示 `global.tickers` 公开推送，只解析 `quanusdt`。价格和成交额以 USDT 计，成交量以 QUAN 计。
+- [QUANTUS/USDT](https://safetrade.com/exchange/QUANTUS-USDT?type=basic) 是 Quantus 在 SafeTrade 的当前交易对，替代原 QUAN/USDT；**不使用 QTC/USDT（另一项目）**。行情使用 [SafeTrade 官方客户端](https://github.com/safetrade-exchange/example-client) 所示 `global.tickers` 公开推送，只解析 `quantususdt`。价格和成交额以 USDT 计，成交量以 QUANTUS 计。
 - 行情卡显著提示“市场深度较小”，展示的是最近成交价，不承诺可成交价格，不把 USDT 直接当 USD。报价获取时间不是实际成交时间。
 - 两种数据各自更新；每分钟刷新，仅页面可见且总览打开时请求。读取失败保留明确标记的上次数据，没有数据时显示不可用；不内置演示价格或从其他币种补值。
-- 已在浏览器中通过生产 CSP 验证真实 QUAN/USDT 行情推送。部分网络或交易所访问限制仍可能导致报价不可用，此时提示稍后刷新。总览不提供跳转交易所的按钮。
+- 公开行情使用指定的 WebSocket 路径并受生产 CSP 限制。部分网络或交易所访问限制仍可能导致报价不可用，此时提示稍后刷新。总览不提供跳转交易所的按钮。
 
 总览完全在浏览器执行，不新增后端、API 密钥或远程 JavaScript。只在文档 CSP 增加指定的 SafeTrade 公开 WebSocket 路径；签名 Worker 的 CSP、加密组件与转账费率不变。

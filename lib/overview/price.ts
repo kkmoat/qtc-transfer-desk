@@ -1,8 +1,8 @@
 // Official public feed: github.com/safetrade-exchange/example-client (ws.py, manager.py).
-// QUAN is Quantus on SafeTrade. QTC/USDT is an unrelated currency and is never a fallback.
-export const SAFETRADE_MARKET = 'quanusdt';
+// QUANTUS is Quantus on SafeTrade; the former QUAN market is not used. QTC/USDT is an unrelated currency and is never a fallback.
+export const SAFETRADE_MARKET = 'quantususdt';
 export const SAFETRADE_WS = 'wss://safe.trade/api/v2/websocket/public';
-export type PriceSnapshot = { last: string; high: string | null; low: string | null; change: number | null; volumeUsdt: string | null; amountQuan: string | null; fetchedAt: number };
+export type PriceSnapshot = { last: string; high: string | null; low: string | null; change: number | null; volumeUsdt: string | null; amountQuantus: string | null; fetchedAt: number };
 function decimal(value: unknown, positive = false): string | null {
   if (typeof value === 'number' && Number.isFinite(value) && value >= 0 && value < 1e15) value = value.toFixed(18).replace(/\.?0+$/, '');
   if (typeof value !== 'string' || !/^(0|[1-9][0-9]{0,14})(\.[0-9]{1,18})?$/.test(value)) return null;
@@ -18,7 +18,7 @@ export function parsePriceMessage(raw: unknown, fetchedAt: number): PriceSnapsho
   const row = ticker as Record<string, unknown>, last = decimal(row.last, true);
   if (!last) throw new Error('SafeTrade 报价格式异常。');
   const change = typeof row.price_change_percent === 'string' && /^[+-]?\d+(\.\d+)?%$/.test(row.price_change_percent) ? Number(row.price_change_percent.slice(0,-1)) : null;
-  return { last, high: decimal(row.high), low: decimal(row.low), change: change !== null && Number.isFinite(change) && change >= -100 ? change : null, volumeUsdt: decimal(row.volume), amountQuan: decimal(row.amount), fetchedAt };
+  return { last, high: decimal(row.high), low: decimal(row.low), change: change !== null && Number.isFinite(change) && change >= -100 ? change : null, volumeUsdt: decimal(row.volume), amountQuantus: decimal(row.amount), fetchedAt };
 }
 export function fetchPriceSnapshot(signal: AbortSignal, makeSocket: (url: string) => WebSocket = url => new WebSocket(url)): Promise<PriceSnapshot> {
   return new Promise((resolve, reject) => {
