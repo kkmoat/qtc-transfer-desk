@@ -10,7 +10,7 @@ export function ReferralBanner() {
       aria-label={t("打开注册链接（币安邀请推广），前往 www.bi86.com（新标签页）")}>
       <span className="referral-icon" aria-hidden="true"><Gift size={25} /></span>
       <div className="referral-content">
-        <div className="referral-title"><strong>{t("BINANCE 币安邀请")}</strong><span className="referral-label">{t("推广")}</span></div>
+        <div className="referral-title"><strong>{t("BINANCE 币安返手续费注册")}</strong><span className="referral-label">{t("推广")}</span></div>
         <p>{t("通过作者邀请链接注册")}<span className="referral-code">{t("邀请码")}<b>HA6EW1HC</b></span></p>
         <span className="referral-domain">{t("跳转至 www.bi86.com")}</span>
       </div>

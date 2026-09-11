@@ -304,7 +304,7 @@ export const EN: Readonly<Record<string,string>> = {
   "计算免费，无需打开钱包。设备、成本和价格只在当前页面内计算，不上传、不保存；刷新页面将重置输入。浏览器仅向 Quanpool 请求公开数据。": "This calculator is free and needs no wallet. Hardware, costs, and prices are calculated only in this page, not uploaded or saved. Refreshing resets the inputs. The browser requests only public data from Quanpool.",
   "邀请推广": "Referral promotion",
   "打开注册链接（币安邀请推广），前往 www.bi86.com（新标签页）": "Open registration link (Binance referral promotion) at www.bi86.com in a new tab",
-  "BINANCE 币安邀请": "BINANCE referral",
+  "BINANCE 币安返手续费注册": "BINANCE fee rebate registration",
   "推广": "Sponsored",
   "通过作者邀请链接注册": "Register with the creator's referral link",
   "邀请码": "Referral code ",
