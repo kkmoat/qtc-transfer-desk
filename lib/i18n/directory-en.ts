@@ -11,6 +11,8 @@ export const DIRECTORY_EN: Readonly<Record<string, string>> = {
   '视频教程': 'Video tutorial',
   '文字教程': 'Written tutorial',
   'Quantus白皮书': 'Quantus whitepaper',
+  'Binance报道': 'Binance coverage',
+  'Finbold报道': 'Finbold coverage',
   '微信交流群': 'WeChat community',
   '官方X': 'Official X',
   '官方Telegram': 'Official Telegram',

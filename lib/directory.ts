@@ -18,6 +18,7 @@ export const DIRECTORY_CATEGORIES: readonly DirectoryCategory[] = [
       { label: 'QTC总览', href: '/overview/' },
       { label: '场外OTC订单', href: OTC_ORDERS_URL },
       { label: 'QTC网站挂单', href: OTC_ORDERS_URL },
+      { label: 'CoinGecko', href: 'https://www.coingecko.com/en/coins/quantus?chart=type%3Dprice%26mode%3Dline%26timeframe%3Dmax' },
     ],
   },
   {
@@ -41,6 +42,8 @@ export const DIRECTORY_CATEGORIES: readonly DirectoryCategory[] = [
       { label: 'Quantus白皮书', href: 'https://www.quantus.com/whitepaper/' },
       { label: '官方文档', href: 'https://docs.quantus.com/' },
       { label: '比特币入门', href: 'https://bitcoin.org/zh_CN/' },
+      { label: 'Binance报道', href: 'https://www.binance.com/en/square/post/365438836341829' },
+      { label: 'Finbold报道', href: 'https://finbold.com/quantus-launches-mainnet-with-post-quantum-cryptography-from-block-one-as-quantum-threat-grows/' },
     ],
   },
   {
