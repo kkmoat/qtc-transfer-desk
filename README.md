@@ -158,7 +158,7 @@ npm run preview
 
 ## 邀请推广
 
-转账页和挖矿计算器顶部展示作者提供的邀请推广横幅，标明推广属性、邀请码与目标域名。点击后在新标签页打开 `https://accounts.usnbweb.red/zh-CN/register?ref=HA6EW1HC`，并使用 `sponsored noopener noreferrer`。该横幅只包含本站静态文字与样式，不加载第三方广告脚本、不预连接推广域名、不传递钱包或计算器输入，也不承诺注册优惠或收益。
+转账页和挖矿计算器顶部展示作者提供的邀请推广横幅，标明推广属性、邀请码与目标域名。点击后在新标签页打开 `https://www.bi86.com/go/8.html`，并使用 `sponsored noopener noreferrer`。该横幅只包含本站静态文字与样式，不加载第三方广告脚本、不预连接推广域名、不传递钱包或计算器输入，也不承诺注册优惠或收益。
 
 ## 数据流与本地记录
 
