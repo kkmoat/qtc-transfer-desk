@@ -155,7 +155,15 @@ npm run preview
 
 官方 RPC 的连通性与访问来源有关，与本站静态文件校验分开检查：运行 `node scripts/verify-deployment.mjs --rpc-only`，验证当前网络下两个节点对网站来源的跨域预检和公开查询。也可加 `--with-rpc` 一并检查。第三方节点可能对数据中心或某些网络限制请求；本站不会为绕过节点限制而把签名功能移到服务器。
 
-## 部署到 Vercel
+## 当前生产部署
+
+自 2026-09-11 起，`https://qtc123.com` 托管在 AWS Lightsail 香港区域（`ap-east-1`），实例 `qtc123` 的静态 IPv4 为 `18.166.39.21`。生产服务使用 Nginx 和 Let’s Encrypt HTTPS；DNS 仍由 Vercel 托管，旧 Vercel 部署保留为备用。
+
+更新生产网站时，应构建目标提交的完整 `dist/`，发布到服务器 `/var/www/qtc123/releases/` 下的新版本目录，核验文件后原子切换 `/var/www/qtc123/current`，再运行上方的线上部署核验。当前 GitHub Actions 负责检查和构建；仅推送代码或更新 Vercel 不会更新香港生产服务器。
+
+Nginx 配置位于 `/etc/nginx/sites-available/qtc123`、`/etc/nginx/snippets/qtc123-common.conf` 和 `/etc/nginx/conf.d/qtc123-maps.conf`。安全响应头应与 `scripts/security-policy.mjs` 保持一致，尤其是 `/crypto/worker.js` 的独立 CSP；Nginx 不读取 `vercel.json`。证书通过 `/var/www/acme` 的 HTTP 验证自动续期，由 `certbot.timer` 定时检查，续期成功后检查并重载 Nginx。
+
+## Vercel 备用部署参考
 
 1. Fork 本仓库，在 Vercel 中导入自己的 GitHub 仓库。
 2. 使用仓库根目录，Framework Preset 选择 **Vite**，Node.js 选择 **24.x**。
@@ -173,7 +181,7 @@ npm run preview
 
 ## 数据流与本地记录
 
-助记词由浏览器表单交给本地 Worker，Rust/WASM 在该 Worker 中派生账户并签名。私钥留在签名组件内存中；应用不将助记词或私钥保存到浏览器存储、发送给 RPC，或上传到 Vercel。网页主线程会接收公开地址、公钥和签名，用于检查及构造交易。
+助记词由浏览器表单交给本地 Worker，Rust/WASM 在该 Worker 中派生账户并签名。私钥留在签名组件内存中；应用不将助记词或私钥保存到浏览器存储、发送给 RPC，或上传到托管服务器。网页主线程会接收公开地址、公钥和签名，用于检查及构造交易。
 
 余额查询、费用估算和交易广播需要联网，浏览器直接访问配置的官方 RPC：
 
