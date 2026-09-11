@@ -52,7 +52,7 @@ export function usePageMetadata(view: DeskView, language: 'zh' | 'en') {
     document.title = title;
     document.documentElement.lang = language === 'en' ? 'en' : 'zh-CN';
     const values: Record<string, string> = {
-      'meta[name="description"]': description,
+      'meta[name="description" i]': description,
       'meta[property="og:title"]': title,
       'meta[property="og:description"]': description,
       'meta[property="og:url"]': canonicalUrl(view),

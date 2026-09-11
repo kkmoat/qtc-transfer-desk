@@ -26,6 +26,6 @@ test('each page has distinct metadata in both UI languages', () => {
   for (const language of ['zh', 'en'] as const) {
     assert.equal(new Set(VIEWS.map(view => pageMetadata(view, language).title)).size, VIEWS.length);
     assert.equal(new Set(VIEWS.map(view => pageMetadata(view, language).description)).size, VIEWS.length);
-    for (const view of VIEWS) assert(pageMetadata(view, language).title.includes('QTC123'));
+    for (const view of VIEWS) assert(pageMetadata(view, language).title.includes('QTC'));
   }
 });

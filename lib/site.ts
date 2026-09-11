@@ -16,7 +16,7 @@ export function viewFromLocation(pathname: string, hash = ''): DeskView {
 
 const metadata = {
   directory: {
-    zh: { title: 'QTC123｜Quantus 中文导航与 QTC 工具', description: 'QTC123 是独立的 Quantus 中文社区导航，汇集官网、钱包、文档、区块浏览器及加密货币常用网址，提供 QTC 总览、转账、加密账户和挖矿成本工具。' },
+    zh: { title: 'QTC币导航-Quantus_QTC币交易所_QTC币价格_QTC钱包', description: 'QTC币导航提供Quantus量子加密区块链最新资讯，QTC币交易所大全，QTC币钱包下载，QTC币最新价格行情,Quantus 是量子安全加密货币。QTC币供应上限 2,100 万，保护隐私。' },
     en: { title: 'QTC123 | Quantus Directory & QTC Tools', description: 'An independent Quantus community directory with official resources, wallets, explorers and crypto links, plus QTC overview, transfers, encrypted accounts and mining cost tools.' },
   },
   intro: {

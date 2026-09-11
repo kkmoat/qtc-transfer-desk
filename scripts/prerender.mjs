@@ -28,7 +28,7 @@ try {
     assert(body.includes('<h1'), `Missing content for ${view}`);
     const html = template
       .replace(/<title>.*?<\/title>/, `<title>${escape(title)}</title>`)
-      .replace(/<meta name="description" content="[^"]*"\s*\/>/, `<meta name="description" content="${escape(description)}" />`)
+      .replace(/<meta name="description" content="[^"]*"\s*\/>/i, `<meta name="Description" content="${escape(description)}" />`)
       .replace('</head>', `    ${head}\n  </head>`)
       .replace('<div id="root"></div>', () => `<div id="root">${body}</div>`);
     const directory = 'dist' + viewPath(view);
