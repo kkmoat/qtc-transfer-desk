@@ -129,7 +129,7 @@ export const EN: Readonly<Record<string,string>> = {
   "查看详情": "View details",
   "查看更多（已显示": "Show more (showing ",
   "笔）": " transactions)",
-  "独立社区工具 · 非 Quantus 官方产品 · 未经独立安全审计": "Independent community tool · Not an official Quantus product · Not independently security audited",
+  "独立社区工具 · 非 Quantus 官方产品": "Independent community tool · Not an official Quantus product",
   "GitHub 开源": "Source on GitHub",
   "签名组件源码": "Signing component source",
   "联系我们，复制微信号 {0}": "Contact us: copy WeChat ID {0}",
