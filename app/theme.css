@@ -1,0 +1,99 @@
+/* Display preference lives on html so portals and native controls share it. */
+:root{color-scheme:dark}
+.header-controls{display:flex;align-items:center;gap:14px;margin-left:auto;flex-shrink:0}
+.header-controls .language-switcher{margin-left:0}
+.theme-toggle{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;border:1px solid var(--border);border-radius:8px;padding:7px 11px;background:var(--secondary);color:var(--foreground);font-size:13px;line-height:1.5;white-space:nowrap;cursor:pointer}
+.theme-toggle:hover{border-color:var(--primary)}
+.theme-toggle:focus-visible{outline:2px solid var(--ring);outline-offset:3px}
+.theme-toggle svg{flex:none}
+@media(max-width:900px){.topbar{gap:16px}.header-controls{gap:10px}.theme-toggle span{display:none}.theme-toggle{width:40px;padding:8px}}
+@media(max-width:650px){.topbar>.header-controls{grid-column:2;grid-row:1;justify-self:end;margin-left:0;gap:7px}}
+
+html[data-theme=light]{
+  color-scheme:light;
+  --background:#f5f7fa;--foreground:#192536;
+  --card:#ffffff;--card-foreground:#192536;
+  --popover:#ffffff;--popover-foreground:#192536;
+  --secondary:#edf2f7;--secondary-foreground:#26374b;
+  --muted:#edf2f7;--muted-foreground:#56667a;
+  --accent:#fff0e6;--accent-foreground:#983c17;
+  --destructive:#b8322b;--border:#d6dfe8;--input:#b8c5d4;--ring:#bc4b1a;
+  --light-text:#26374b;--light-muted:#56667a;--light-orange:#a7441c;
+  --light-warm:#fff4e9;--light-warm-border:#e6c8ad;
+}
+html[data-theme=light] ::selection{background:#ffdcc7;color:#3d291e}
+
+/* Shared surfaces, divider lines and form fields. */
+html[data-theme=light] :is(.transfer-panel,.history-panel,.mining-card,.encrypted-card,.encrypted-withdrawal,.intro-feature,.intro-resources,.overview-market-card,.directory-table,.wallet-dialog,.review-dialog,.wechat-qr-dialog,[data-slot=select-content]){background:#fff;border-color:var(--border);color:var(--foreground)}
+html[data-theme=light] :is(.account-panel,.overview-card){background:linear-gradient(140deg,#fff,#f2f6fb);border-color:var(--border)}
+html[data-theme=light] .overview-card.overview-circulating{background:linear-gradient(140deg,#fff4e9,#fff);border-color:var(--light-warm-border)}
+html[data-theme=light] :is(.topbar,.desk-navigation,.privacy-note,.node-select,.fee-row,.history-row,.directory-category+.directory-category,.directory-row h2,.intro-facts,.encrypted-stats,.encrypted-addresses li,.withdraw-inputs,.withdraw-input,.withdraw-history-row,.mining-total,.mining-price,.mining-result-stats,.mining-result-stats .mining-profit,.mining-periods,.mining-assumption,.mining-method){border-color:var(--border)}
+html[data-theme=light] .step-line{background:var(--border)}
+html[data-theme=light] .step b{border-color:#a9b6c6}
+html[data-theme=light] :is(.address-input,.amount-input,.seed-input,.node-select [data-slot=select-trigger],.import-options input,.import-options [data-slot=select-trigger],.withdraw-destination input,.mining-field select,.mining-input-unit){background:#fff;color:var(--foreground);border-color:var(--input)}
+html[data-theme=light] :is(input,textarea)::placeholder{color:#66788d}
+html[data-theme=light] :is(.mining-input-unit input,.amount-input input){color:var(--foreground)}
+html[data-theme=light] .mining-field select{color-scheme:light}
+html[data-theme=light] .seed-input{border:1px solid var(--input);border-radius:9px;padding:12px 14px}
+html[data-theme=light] :is(.mining-device,.encrypted-address,.intro-resource){background:#f6f8fb;border-color:var(--border)}
+html[data-theme=light] :is(.withdraw-review,.withdraw-receipt){background:#fff8f1;border-color:var(--light-warm-border)}
+html[data-theme=light] .secondary{border-color:var(--input)!important;color:var(--light-text)!important}
+html[data-theme=light] .secondary:hover:not(:disabled){background:#edf2f7!important}
+html[data-theme=light] :is(.overview-refresh,.mining-refresh){background:#fff;color:var(--light-text);border-color:var(--input)}
+
+/* Body text remains legible on white and pale tinted panels. */
+html[data-theme=light] :is(.wordmark-light,.network,.quiet-link,.session-label,.balance-label,.subtle,.account-detail,.privacy-note,.transfer-heading p,.steps,.field-help,.amount-label>span,.fee-row,.form-footnote,footer,.micro,.node-select,.receipt-amount>span,dt,.service-fee-summary p,.fee-recipient-label,.history-heading>span,.history-help,.history-empty,.history-summary,.directory-caption,.directory-caption>span,.intro-summary,.intro-facts dt,.intro-facts dd small,.intro-section-heading p,.intro-feature p,.intro-resource small,.intro-source-note,.encrypted-intro p,.encrypted-consent,.encrypted-stats dt,.encrypted-addresses span,.encrypted-details,.withdraw-heading p,.withdraw-input small,.withdraw-history-row small,.mining-subtitle,.mining-source-bar,.mining-source-bar small,.mining-field,.mining-input-unit>span,.mining-device-title,.mining-hint,.mining-hint>span,.mining-total>span,.mining-cost>span,.mining-result-stats span,.mining-result-stats strong small,.mining-periods strong small,.mining-periods span,.mining-assumption,.mining-network dt,.mining-method,.mining-privacy,.overview-toolbar,.overview-label,.overview-value small,.overview-help,.overview-foot,.overview-data-note,.overview-price small,.overview-market-stats dt,.overview-market-stats small,.overview-up span,.overview-down span,.overview-market-footer p,.overview-disclaimer,.language-switcher){color:var(--light-muted)}
+html[data-theme=light] :is(.panel-label,.panel-label svg,.balance-number span,.account-detail strong,.amount-input>span,.fee-row strong,.account-address,.account-address button,.receipt dt button,.text-button,dd,.receipt-link,.history-primary>strong>span,.history-actions button,.history-actions a,.directory-links a,.directory-qr-trigger,.intro-facts dd,.intro-resource strong,.encrypted-address button,.encrypted-details summary,.mining-device-title button,.mining-add,.mining-result-stats strong,.mining-network dd){color:var(--light-text)}
+html[data-theme=light] :is(.wallet-dialog,.review-dialog,.wechat-qr-dialog) [data-slot=dialog-description]{color:var(--light-muted)}
+html[data-theme=light] :is(.eyebrow,.privacy-note svg,.step.active,.result-state,.history-empty a,.history-detail-state,.directory-row h2,.intro-kicker,.intro-feature>a,.intro-source-note a,.encrypted-intro>svg,.encrypted-details a,.withdraw-selection-title>span,.withdraw-net,.mining-hint strong,.mining-total>strong,.mining-result-heading,.mining-cost,.mining-network a,.mining-method summary,.overview-card a){color:var(--light-orange)}
+html[data-theme=light] .step.active b{border-color:var(--primary)}
+html[data-theme=light] :is(.section-icon,.step-badge,.intro-feature-icon,.mining-step){background:var(--light-warm);border-color:var(--light-warm-border);color:var(--light-orange)}
+
+/* Navigation, segmented options and links. */
+html[data-theme=light] .desk-navigation a{color:var(--light-muted)}
+html[data-theme=light] :is(.desk-navigation a[aria-current=page],.desk-navigation a:hover,.directory-links a:hover,.directory-links a:focus-visible,.directory-qr-trigger:hover,.directory-qr-trigger:focus-visible,.language-switcher button[aria-pressed=true]){background:#ffeadc;color:#963911}
+html[data-theme=light] .mining-segment{background:#edf2f7;border-color:var(--border)}
+html[data-theme=light] .mining-segment button{color:var(--light-muted)}
+html[data-theme=light] .mining-segment button[aria-pressed=true]{background:#fff;color:var(--foreground);box-shadow:0 1px 5px #25394d1a}
+html[data-theme=light] .mining-add{border-color:var(--input)}
+html[data-theme=light] :is(.mining-add:hover,.text-button:hover,.account-address button:hover,.receipt dt button:hover,.history-actions button:hover,.history-actions a:hover){color:var(--light-orange);border-color:var(--light-orange)}
+html[data-theme=light] :is(.author-link,.encrypted-import-link,.intro-actions a){background:var(--light-warm);border-color:var(--light-warm-border);color:var(--light-orange)}
+html[data-theme=light] .author-link strong{color:#783216}
+html[data-theme=light] .author-link:hover{background:#ffe8d6;border-color:#cc8a60;color:#783216}
+html[data-theme=light] .intro-actions a:first-child{background:var(--primary);border-color:var(--primary);color:#21150f}
+html[data-theme=light] .intro-resource>svg{color:#985e3c}
+html[data-theme=light] .intro-resource>svg:last-child{color:var(--light-muted)}
+html[data-theme=light] .intro-resource:hover{background:#fff3e8;border-color:#ccaa8c}
+html[data-theme=light] .community-link{background:#eaf5fc;border-color:#a9cddd;color:#245a77}
+html[data-theme=light] .community-link:hover{background:#dceef8;border-color:#79a9c2;color:#174b65}
+html[data-theme=light] .otc-link{background:#edf8f1;border-color:#abd3b9;color:#246844}
+html[data-theme=light] .otc-link:hover{background:#dff2e6;border-color:#7caf90;color:#185733}
+html[data-theme=light] .wechat-qr-original{color:#245a77}
+html[data-theme=light] .wechat-qr-original:hover{color:#153f59}
+
+/* Warnings, errors and monetary states retain their meanings. */
+html[data-theme=light] .notice{background:#edf6fc;border-color:#b9d6e7;color:#28516c}
+html[data-theme=light] .notice.error{background:#fff1ee;border-color:#e5b7ab;color:#9c3527}
+html[data-theme=light] :is(.service-fee-summary,.history-notice,.overview-warning,.overview-depth,.history-badge,.mining-tag){background:#fff7e7;border-color:#e5cfaa;color:#76501f}
+html[data-theme=light] :is(.fee-line,.fee-recipient,.history-notice strong,.overview-data-note [role=status],.overview-market-footer .overview-feed-error,.overview-status){color:#80551e}
+html[data-theme=light] .history-badge.confirmed{background:#edf8f1;border-color:#a9d0b7;color:#226b46}
+html[data-theme=light] :is(.result-state.success,.overview-up,.mining-results .positive){color:#157348}
+html[data-theme=light] :is(.overview-down,.mining-results .negative,.mining-validation){color:#b0342b}
+html[data-theme=light] .contact-status{color:#28516c}
+html[data-theme=light] .overview-data-note{border-color:#9bbaca}
+html[data-theme=light] .intro-hero{background:radial-gradient(ellipse at top left,#fff0e2 0,transparent 65%),#fff;border-color:var(--light-warm-border)}
+html[data-theme=light] .mining-result-card{background:linear-gradient(145deg,#fff2e3,#fff 70%);border-color:var(--light-warm-border)}
+
+/* Promotion keeps its gold identity with dark text in the light theme. */
+html[data-theme=light] .referral-banner{background:linear-gradient(110deg,#fff4d9,#fffaf0 75%);border-color:#dfc789}
+html[data-theme=light] .referral-banner:hover{background:linear-gradient(110deg,#ffefc5,#fff7e6 75%);border-color:#bd9b46}
+html[data-theme=light] .referral-icon{background:#fff0bf;border-color:#d7b85c;color:#826007}
+html[data-theme=light] .referral-title strong{color:#765200}
+html[data-theme=light] .referral-label{color:#74613b;border-color:#c8b382}
+html[data-theme=light] :is(.referral-content p,.referral-code,.referral-domain){color:#69604c}
+html[data-theme=light] .referral-code b{color:#66501b}
+
+/* Keep keyboard focus visible against light backgrounds. */
+html[data-theme=light] :is(a,button,input,textarea,select):focus-visible{outline-color:var(--ring)}
+html[data-theme=light] :is(.amount-input,.mining-input-unit):focus-within{outline-color:var(--ring)}
+html[data-theme=light] :is(.quiet-link:hover,footer a:hover,.fee-recipient:hover){color:var(--light-orange)}

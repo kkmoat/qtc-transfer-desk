@@ -10,9 +10,11 @@ for (const view of VIEWS) {
   const htmlDecoded = html.replaceAll('&#39;', "'").replaceAll('&quot;', '"').replaceAll('&amp;', '&');
   assert(htmlDecoded.includes(META_CSP), 'Production HTML must contain the intended CSP');
   const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
-  assert(scripts.length > 0, 'Expected an external application script');
+  assert(scripts.some(([, attrs]) => /src="\/assets\/[^"]+\.js"/.test(attrs)), 'Expected an external application script');
+  assert.equal(scripts.filter(([, attrs]) => /src="\/theme-init\.js"/.test(attrs)).length, 1, 'Expected one early theme bootstrap');
+  assert(html.indexOf('/theme-init.js') < html.indexOf('<body>'), 'Theme must initialize before page content');
   for (const [, attributes, body] of scripts) {
-    assert(/\bsrc="\/assets\/[^"<>]+\.js"/.test(attributes), 'Only same-origin bundled scripts are allowed');
+    assert(/\bsrc="(?:\/assets\/[^"<>]+\.js|\/theme-init\.js)"/.test(attributes), 'Only bundled scripts and the same-origin theme bootstrap are allowed');
     assert.equal(body.trim(), '', 'Inline JavaScript is not allowed');
   }
   assert(!/\bon\w+\s*=/i.test(html), 'Inline event handlers are not allowed');
@@ -56,5 +58,6 @@ async function auditFiles(directory) {
 }
 await auditFiles('dist');
 await verifyCrypto('dist');
+assert.equal(await readFile('dist/theme-init.js', 'utf8'), await readFile('public/theme-init.js', 'utf8'));
 assert.equal(await readFile('dist/crypto/worker.js', 'utf8'), await readFile('public/crypto/worker.js', 'utf8'));
 console.log('Static production build verified: external scripts, CSP, isolated Worker policy, crypto checksums and no server/secret artifacts.');

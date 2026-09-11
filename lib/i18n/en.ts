@@ -5,6 +5,10 @@ import { WORMHOLE_EN } from './wormhole-en.ts';
 import { WORMHOLE_ERRORS_EN } from './wormhole-errors.ts';
 // Static UI translations; no remote translation service.
 export const EN: Readonly<Record<string,string>> = {
+  '白色模式': 'Light mode',
+  '深色模式': 'Dark mode',
+  '切换为白色模式': 'Switch to light mode',
+  '切换为深色模式': 'Switch to dark mode',
   ...OVERVIEW_EN,
   ...INTRODUCTION_EN,
   ...DIRECTORY_EN,

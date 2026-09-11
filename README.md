@@ -7,6 +7,7 @@ Quantus 中文社区网址导航，提供项目介绍、QTC 总览、浏览器�
 - 在线使用：[qtc123.com](https://qtc123.com/)
 - 网址导航：[按 Quantus、行情、交易、挖矿、学习和社区分类浏览常用网址](https://qtc123.com/)
 - 项目介绍：[Quantus 项目概况、核心技术与官方资料](https://qtc123.com/intro/)
+- 外观：右上角可切换白色／深色模式，默认深色；偏好仅保存在本机 `qtc-theme-v1`，刷新和切换页面后保留，存储不可用时仍可在当前页面切换。
 - 语言：页面右上角选择 **中文 / English**，偏好仅保存在本机 `qtc-language-v1`，切换不会改变账户、金额或服务费。
 - 加密账户：[Encrypted Account 恢复与转出](https://qtc123.com/encrypted/)
 - 挖矿计算：[设备算力与每枚 QTC 成本](https://qtc123.com/mining/)
