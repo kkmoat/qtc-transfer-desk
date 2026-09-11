@@ -30,10 +30,21 @@ const short = (v:string)=>v.slice(0,10)+'…'+v.slice(-8);
 const explorer = (address:string)=>'https://explorer.quantus.com/accounts/'+encodeURIComponent(address);
 function message(e:unknown){return e instanceof Error?e.message:t("操作未完成，请重试。");}
 
+type DeskView='directory'|'intro'|'transfer'|'mining'|'encrypted'|'overview';
+const viewFromHash=(hash:string):DeskView=>hash==='#intro'?'intro':hash==='#overview'?'overview':hash==='#mining'?'mining':hash==='#encrypted'?'encrypted':hash==='#transfer'?'transfer':'directory';
+
 export default function Home(){
  useLanguage();
- const [view,setView]=useState<'directory'|'intro'|'transfer'|'mining'|'encrypted'|'overview'>(()=>typeof window!=='undefined'?(window.location.hash==='#directory'?'directory':window.location.hash==='#intro'?'intro':window.location.hash==='#overview'?'overview':window.location.hash==='#mining'?'mining':window.location.hash==='#encrypted'?'encrypted':'transfer'):'transfer');
- useEffect(()=>{const changed=()=>setView(window.location.hash==='#directory'?'directory':window.location.hash==='#intro'?'intro':window.location.hash==='#overview'?'overview':window.location.hash==='#mining'?'mining':window.location.hash==='#encrypted'?'encrypted':'transfer');window.addEventListener('hashchange',changed);return()=>window.removeEventListener('hashchange',changed);},[]);
+ const [view,setView]=useState<DeskView>(()=>viewFromHash(typeof window!=='undefined'?window.location.hash:''));
+ useEffect(()=>{
+  const changed=()=>{
+   if(!window.location.hash)window.history.replaceState(window.history.state,'','#directory');
+   setView(viewFromHash(window.location.hash));
+  };
+  changed();
+  window.addEventListener('hashchange',changed);
+  return()=>window.removeEventListener('hashchange',changed);
+ },[]);
  const [endpoint,setEndpoint]=useState<string>(RPC_URLS[0]);
  const [account,setAccount]=useState<Account|null>(null);
  const [wallet,setWallet]=useState<OpenWallet|null>(null);
