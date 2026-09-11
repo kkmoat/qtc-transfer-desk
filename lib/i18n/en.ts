@@ -1,11 +1,13 @@
 import { OVERVIEW_EN } from './overview-en.ts';
 import { INTRODUCTION_EN } from './introduction-en.ts';
+import { DIRECTORY_EN } from './directory-en.ts';
 import { WORMHOLE_EN } from './wormhole-en.ts';
 import { WORMHOLE_ERRORS_EN } from './wormhole-errors.ts';
 // Static UI translations; no remote translation service.
 export const EN: Readonly<Record<string,string>> = {
   ...OVERVIEW_EN,
   ...INTRODUCTION_EN,
+  ...DIRECTORY_EN,
   ...WORMHOLE_EN,
   ...WORMHOLE_ERRORS_EN,
   "提交中": "Submitting",
