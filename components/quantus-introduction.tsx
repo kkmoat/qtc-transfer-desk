@@ -1,4 +1,4 @@
-import { ArrowUpRight, BookOpen, CodeXml, Cpu, FileText, Fingerprint, Globe, Network, ShieldCheck, Wallet } from 'lucide-react';
+import { ArrowUpRight, BookOpen, CodeXml, Cpu, FileText, Fingerprint, Globe, MessageCircle, Network, Send, ShieldCheck, Wallet } from 'lucide-react';
 import { t, useLanguage } from '@/lib/i18n';
 
 const external = { target: '_blank', rel: 'noopener noreferrer', referrerPolicy: 'no-referrer' } as const;
@@ -32,6 +32,8 @@ const resources = [
   { icon: Network, title: '主网区块浏览器', description: '查看区块、账户与链上交易', href: 'https://explorer.quantus.com/' },
   { icon: CodeXml, title: '官方 GitHub', description: '查看开源代码与开发进展', href: 'https://github.com/Quantus-Network' },
   { icon: Wallet, title: '官方钱包', description: '通过官网获取钱包下载入口', href: 'https://www.quantus.com/wallet/' },
+  { icon: MessageCircle, title: '官方 X（推特）', description: '关注 @QuantusNetwork，获取项目动态', href: 'https://x.com/QuantusNetwork' },
+  { icon: Send, title: '官方 Telegram', description: '加入 Quantus 官方社区讨论', href: 'https://t.me/quantusnetwork' },
 ];
 
 export function QuantusIntroduction() {
