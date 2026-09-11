@@ -14,7 +14,7 @@
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc --noEmit && vite build && node scripts/verify-build.mjs",
+    "build": "tsc --noEmit && vite build && node scripts/prerender.mjs && node scripts/verify-build.mjs",
     "preview": "node scripts/serve-static.mjs",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "check:crypto": "node scripts/verify-crypto.mjs"

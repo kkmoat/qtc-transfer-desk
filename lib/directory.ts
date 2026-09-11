@@ -5,18 +5,18 @@ export const DIRECTORY_CATEGORIES: readonly DirectoryCategory[] = [
   {
     id: 'quantus', title: 'Quantus', links: [
       { label: 'Quantus 官网', href: 'https://www.quantus.com/' },
-      { label: '项目介绍', href: '#intro' },
+      { label: '项目介绍', href: '/intro/' },
       { label: '官方钱包', href: 'https://www.quantus.com/wallet/' },
       { label: '区块浏览器', href: 'https://explorer.quantus.com/' },
       { label: '项目白皮书', href: 'https://www.quantus.com/whitepaper/' },
       { label: '官方文档', href: 'https://docs.quantus.com/' },
       { label: '官方 GitHub', href: 'https://github.com/Quantus-Network' },
-      { label: 'QTC 总览', href: '#overview' },
+      { label: 'QTC 总览', href: '/overview/' },
     ],
   },
   {
     id: 'markets', title: '行情', links: [
-      { label: 'QTC 总览', href: '#overview' },
+      { label: 'QTC 总览', href: '/overview/' },
       { label: 'CoinGecko', href: 'https://www.coingecko.com/' },
       { label: 'CoinMarketCap', href: 'https://coinmarketcap.com/' },
       { label: 'TradingView', href: 'https://www.tradingview.com/' },
@@ -31,14 +31,14 @@ export const DIRECTORY_CATEGORIES: readonly DirectoryCategory[] = [
       { label: 'OKX', href: 'https://www.okx.com/' },
       { label: 'Coinbase', href: 'https://www.coinbase.com/' },
       { label: 'Kraken', href: 'https://www.kraken.com/' },
-      { label: 'QTC 转账', href: '#transfer' },
-      { label: '加密账户', href: '#encrypted' },
+      { label: 'QTC 转账', href: '/transfer/' },
+      { label: '加密账户', href: '/encrypted/' },
     ],
   },
   {
     id: 'mining', title: '挖矿', links: [
       { label: 'Quantus 挖矿指南', href: 'https://docs.quantus.com/guides/mining/' },
-      { label: '挖矿成本计算器', href: '#mining' },
+      { label: '挖矿成本计算器', href: '/mining/' },
       { label: 'MiningPoolStats', href: 'https://miningpoolstats.stream/' },
       { label: 'WhatToMine', href: 'https://whattomine.com/' },
       { label: 'F2Pool 鱼池', href: 'https://www.f2pool.com/' },

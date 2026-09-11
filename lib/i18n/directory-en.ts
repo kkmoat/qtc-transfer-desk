@@ -1,4 +1,6 @@
 export const DIRECTORY_EN: Readonly<Record<string, string>> = {
+  'Quantus 中文导航': 'Quantus Directory',
+  'QTC 挖矿成本计算器': 'QTC mining cost calculator',
   '网址导航': 'Link Directory',
   '加密货币网址导航': 'Crypto Link Directory',
   '常用网址 · 分类直达': 'Useful links · Browse by category',

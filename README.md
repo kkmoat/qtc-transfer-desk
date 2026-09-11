@@ -1,15 +1,15 @@
-# QTC 转账台
+# QTC123 · Quantus 中文导航与工具
 
-一个使用浏览器本地签名的 Quantus 主网 QTC 转账工具。前端由 React、TypeScript 和 Vite 构建，部署产物是静态文件，可自行运行或部署到 Vercel。
+Quantus 中文社区网址导航，提供项目介绍、QTC 总览、浏览器本地签名转账、加密账户和挖矿成本计算工具。前端由 React、TypeScript 和 Vite 构建，部署产物是静态文件，可自行运行或部署到 Vercel。
 
 本项目是独立社区工具，**不是 Quantus 官方钱包，未经独立安全审计**。开源、本地签名和安全响应头能够帮助审查与降低部分风险，不能保证设备、浏览器、依赖或托管页面绝对安全。使用前请阅读 [安全说明](SECURITY.md)。
 
-- 在线使用：[www.qtc-transfer.xyz](https://www.qtc-transfer.xyz/)
-- 网址导航：[按 Quantus、行情、交易、挖矿、学习和社区分类浏览常用网址](https://www.qtc-transfer.xyz/#directory)
-- 项目介绍：[Quantus 项目概况、核心技术与官方资料](https://www.qtc-transfer.xyz/#intro)
+- 在线使用：[qtc123.com](https://qtc123.com/)
+- 网址导航：[按 Quantus、行情、交易、挖矿、学习和社区分类浏览常用网址](https://qtc123.com/)
+- 项目介绍：[Quantus 项目概况、核心技术与官方资料](https://qtc123.com/intro/)
 - 语言：页面右上角选择 **中文 / English**，偏好仅保存在本机 `qtc-language-v1`，切换不会改变账户、金额或服务费。
-- 加密账户：[Encrypted Account 恢复与转出](https://www.qtc-transfer.xyz/#encrypted)
-- 挖矿计算：[设备算力与每枚 QTC 成本](https://www.qtc-transfer.xyz/#mining)
+- 加密账户：[Encrypted Account 恢复与转出](https://qtc123.com/encrypted/)
+- 挖矿计算：[设备算力与每枚 QTC 成本](https://qtc123.com/mining/)
 - 源码：[github.com/kkmoat/qtc-transfer-desk](https://github.com/kkmoat/qtc-transfer-desk)
 - 作者：[X · @kkmoat](https://x.com/kkmoat)
 - 链上查询：[Quantus 区块浏览器](https://explorer.quantus.com/)
@@ -38,7 +38,7 @@
 
 ## 加密账户（Wormhole）
 
-打开 [加密账户页面](https://www.qtc-transfer.xyz/#encrypted)，从官方钱包 **Encrypted Account** 的接收页复制完整地址，再输入同一钱包的助记词。无需填写普通账户序号。助记词只传给本地 Worker，Rust 使用官方 `qp-rusty-crystals-hdwallet 4.1.1` 派生以下两条序列：
+打开 [加密账户页面](https://qtc123.com/encrypted/)，从官方钱包 **Encrypted Account** 的接收页复制完整地址，再输入同一钱包的助记词。无需填写普通账户序号。助记词只传给本地 Worker，Rust 使用官方 `qp-rusty-crystals-hdwallet 4.1.1` 派生以下两条序列：
 
 - 收款：`m/44'/189189189'/0'/0'/n'`
 - 找零：`m/44'/189189189'/0'/1'/n'`
@@ -97,7 +97,7 @@ QTC 使用 12 位小数。代码以整数计算服务费：`ceil(到账金额最
 
 ## 挖矿成本计算器
 
-打开 [挖矿成本计算器](https://www.qtc-transfer.xyz/#mining)，不需要打开钱包：
+打开 [挖矿成本计算器](https://qtc123.com/mining/)，不需要打开钱包：
 
 1. 选择矿工软件、显卡型号和数量，可添加多种设备；缺少基准的型号可以自定义单卡算力，也可以直接输入所有设备的总算力。
 2. 填写在线率。基准默认按原始算力保守扣除矿工软件费；如果填写的是已经扣过矿工费的矿池有效算力，切换为“有效算力”，避免重复扣费。
@@ -121,6 +121,14 @@ QTC 使用 12 位小数。代码以整数计算服务费：`ceil(到账金额最
 Quanpool 未标注 GPU 基准的费前／费后口径，因此默认当作费前估算。其原计算器只扣矿池费，本工具的原始算力模式还扣矿工软件费。两费**依次相乘**：例如矿工费 5%、矿池费 1%，保留比例为 `0.95 × 0.99 = 94.05%`。这与本站转账的 0.5% 服务费无关，**使用计算器免费**。
 
 模型是当前数据不变时的估算，不保证收益，也不代表实际到账记录。PPLNS 幸运值、拒绝份额、难度和奖励变化会使结果不同；不自动计入未填写的成本、出售手续费、税费或停机耗电。月度统一按 30 天计算。设备、成本及单价只留在页面内存，切换工具保留当前输入，刷新页面重置；不上传，也不保存到浏览器存储。
+
+## 可抓取页面与 SEO
+
+构建时由 `scripts/prerender.mjs` 渲染同一 React 页面，输出 `/`、`/intro/`、`/overview/`、`/transfer/`、`/encrypted/`、`/mining/` 六个静态页面。无需部署服务端，不运行账户查询或钱包操作。每页只有对应视图的初始公开内容，客户端继续使用原有交互。
+
+`lib/site.ts` 统一维护标准网址和中英文标题、描述；构建同时生成 `robots.txt` 与 `sitemap.xml`。站点地图仅列出 `https://qtc123.com` 下不带片段的标准网址。旧 `#intro` 等链接继续兼容；根网址仍默认网址导航。元信息、静态抓取内容和全部 HTML 的 CSP 检查纳入构建验证。
+
+可将 [站点地图](https://qtc123.com/sitemap.xml) 提交到站点所有者的搜索引擎管理后台；仓库不包含 Search Console 验证凭证。
 
 ## 本地运行与检查
 
@@ -216,7 +224,7 @@ tests/                  本地测试、公开测试向量及主网元数据
 
 ## QTC 总览
 
-打开 [QTC 总览](https://www.qtc-transfer.xyz/#overview)，可查看当前流通量估算、流通市值 MC、完全稀释估值 FDV、供应上限、当前净发行量、挖矿净新增，以及 SafeTrade QUAN/USDT 公开行情。中英文均可使用，无需打开钱包。
+打开 [QTC 总览](https://qtc123.com/overview/)，可查看当前流通量估算、流通市值 MC、完全稀释估值 FDV、供应上限、当前净发行量、挖矿净新增，以及 SafeTrade QUAN/USDT 公开行情。中英文均可使用，无需打开钱包。
 
 - 最大供应量为 21,000,000 QTC，依据 [Quantus 官方白皮书 v0.4.1](https://www.quantus.com/whitepaper/v0.4.1/)。
 - 供应直接读取官方主网 `Balances.TotalIssuance`（u128 小端，12 位小数），固定最终确认区块，验证主网 genesis。创世链上发行量为 5,670,000.001 QTC（含初始化余额）。

@@ -7,7 +7,7 @@ import { DOCUMENT_CSP, WORKER_CSP, RPC_ORIGINS } from './security-policy.mjs';
 
 const rpcOnly = process.argv.includes('--rpc-only');
 const withRpc = rpcOnly || process.argv.includes('--with-rpc');
-const origin = new URL(process.argv.find(value => value.startsWith('https://')) ?? 'https://www.qtc-transfer.xyz');
+const origin = new URL(process.argv.find(value => value.startsWith('https://')) ?? 'https://qtc123.com');
 assert.equal(origin.protocol, 'https:');
 assert.equal(origin.pathname, '/');
 assert(!origin.username && !origin.password && !origin.search && !origin.hash);
@@ -19,7 +19,7 @@ async function verifyDirectory(directory, prefix = '') {
     const relative = prefix + entry.name;
     const path = join(directory, entry.name);
     if (entry.isDirectory()) { await verifyDirectory(path, relative + '/'); continue; }
-    const route = relative === 'index.html' ? '/' : '/' + relative;
+    const route = relative.endsWith('index.html') ? '/' + relative.slice(0, -'index.html'.length) : '/' + relative;
     const response = await request(new URL(route, origin));
     assert.equal(response.status, 200, `Public resource unavailable: ${route}`);
     const expectedCSP = relative === 'crypto/worker.js' ? WORKER_CSP : DOCUMENT_CSP;

@@ -7,7 +7,7 @@ import { SECURITY_HEADERS, WORKER_CSP } from './security-policy.mjs';
 const root = resolve('dist');
 const port = Number(process.env.PORT ?? 5174);
 if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid PORT');
-const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.wasm': 'application/wasm', '.svg': 'image/svg+xml', '.txt': 'text/plain; charset=utf-8', '.zip': 'application/zip', '.json': 'application/json', '.ico': 'image/x-icon' };
+const mime = { '.xml': 'application/xml; charset=utf-8', '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.wasm': 'application/wasm', '.svg': 'image/svg+xml', '.txt': 'text/plain; charset=utf-8', '.zip': 'application/zip', '.json': 'application/json', '.ico': 'image/x-icon' };
 const server = createServer(async (request, response) => {
   for (const { key, value } of SECURITY_HEADERS) response.setHeader(key, value);
   response.setHeader('Cache-Control', 'no-cache, must-revalidate');
@@ -18,8 +18,15 @@ const server = createServer(async (request, response) => {
     const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
     const relative = pathname === '/' ? 'index.html' : pathname.slice(1);
     if (relative.split('/').some(part => part.startsWith('.')) || relative.includes('\\') || relative.includes('\0')) throw new Error('Invalid path');
-    const path = resolve(root, relative);
-    if (!path.startsWith(root + sep) || !(await stat(path)).isFile()) throw new Error('Not found');
+    let path = resolve(root, relative);
+    if (!path.startsWith(root + sep)) throw new Error('Not found');
+    if ((await stat(path)).isDirectory()) {
+      if (!pathname.endsWith('/')) {
+        response.writeHead(308, { Location: pathname + '/' + new URL(request.url, 'http://localhost').search }); response.end(); return;
+      }
+      path = resolve(path, 'index.html');
+    }
+    if (!(await stat(path)).isFile()) throw new Error('Not found');
     if (pathname === '/crypto/worker.js') response.setHeader('Content-Security-Policy', WORKER_CSP);
     response.setHeader('Content-Type', mime[extname(path)] ?? 'application/octet-stream');
     const data = await readFile(path);

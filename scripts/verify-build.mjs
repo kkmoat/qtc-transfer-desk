@@ -2,18 +2,34 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { DOCUMENT_CSP, META_CSP, WORKER_CSP, SECURITY_HEADERS } from './security-policy.mjs';
+import { VIEWS, viewPath, canonicalUrl, pageMetadata } from '../lib/site.ts';
 import { verifyCrypto } from './verify-crypto.mjs';
 
-const html = await readFile('dist/index.html', 'utf8');
-const htmlDecoded = html.replaceAll('&#39;', "'").replaceAll('&quot;', '"').replaceAll('&amp;', '&');
-assert(htmlDecoded.includes(META_CSP), 'Production HTML must contain the intended CSP');
-const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
-assert(scripts.length > 0, 'Expected an external application script');
-for (const [, attributes, body] of scripts) {
-  assert(/\bsrc="\/assets\/[^"<>]+\.js"/.test(attributes), 'Only same-origin bundled scripts are allowed');
-  assert.equal(body.trim(), '', 'Inline JavaScript is not allowed');
+for (const view of VIEWS) {
+  const html = await readFile('dist' + viewPath(view) + 'index.html', 'utf8');
+  const htmlDecoded = html.replaceAll('&#39;', "'").replaceAll('&quot;', '"').replaceAll('&amp;', '&');
+  assert(htmlDecoded.includes(META_CSP), 'Production HTML must contain the intended CSP');
+  const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+  assert(scripts.length > 0, 'Expected an external application script');
+  for (const [, attributes, body] of scripts) {
+    assert(/\bsrc="\/assets\/[^"<>]+\.js"/.test(attributes), 'Only same-origin bundled scripts are allowed');
+    assert.equal(body.trim(), '', 'Inline JavaScript is not allowed');
+  }
+  assert(!/\bon\w+\s*=/i.test(html), 'Inline event handlers are not allowed');
+  assert.equal([...html.matchAll(/<h1[ >]/g)].length, 1, 'Each page needs one visible main heading');
+  assert.equal([...html.matchAll(/class="desk-view"/g)].length, 1, 'Only the active view should be prerendered');
+  assert(html.includes('<title>' + pageMetadata(view).title + '</title>'));
+  assert.equal([...html.matchAll(/rel="canonical"/g)].length, 1);
+  assert(html.includes('<link rel="canonical" href="' + canonicalUrl(view) + '"'));
+  assert(html.includes('itemType="https://schema.org/WebSite"') || html.includes('itemtype="https://schema.org/WebSite"'));
+  for (const route of VIEWS) assert(html.includes('href="' + viewPath(route) + '"'), 'Missing crawlable internal route');
+  assert(!html.includes('href="#'), 'Internal view links must use paths');
 }
-assert(!/\bon\w+\s*=/i.test(html), 'Inline event handlers are not allowed');
+const sitemap = await readFile('dist/sitemap.xml', 'utf8');
+assert.equal([...sitemap.matchAll(/<loc>/g)].length, VIEWS.length);
+for (const view of VIEWS) assert(sitemap.includes('<loc>' + canonicalUrl(view) + '</loc>'));
+assert(!sitemap.includes('#'));
+assert((await readFile('dist/robots.txt', 'utf8')).includes('Sitemap: https://qtc123.com/sitemap.xml'));
 assert(!DOCUMENT_CSP.includes("script-src 'self' 'unsafe-inline'"));
 assert(!DOCUMENT_CSP.includes("'unsafe-eval'"));
 const config = JSON.parse(await readFile('vercel.json', 'utf8'));

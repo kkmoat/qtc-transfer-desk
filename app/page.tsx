@@ -1,6 +1,8 @@
 import { EncryptedAccount } from '@/components/encrypted-account';
 import './encrypted.css';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { useDeskNavigation, usePageMetadata, navigateToView } from '@/lib/navigation';
+import { SITE_NAME, SITE_ORIGIN, canonicalUrl, pageMetadata, type DeskView } from '@/lib/site';
 import { t, useLanguage, locale } from '@/lib/i18n';
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { ArrowUpRight, ArrowLeftRight, Send, Wallet, ShieldCheck, LockKeyhole, ChevronRight, RefreshCw, Copy, Check, AlertCircle, LoaderCircle, LogOut } from 'lucide-react';
@@ -30,21 +32,12 @@ const short = (v:string)=>v.slice(0,10)+'…'+v.slice(-8);
 const explorer = (address:string)=>'https://explorer.quantus.com/accounts/'+encodeURIComponent(address);
 function message(e:unknown){return e instanceof Error?e.message:t("操作未完成，请重试。");}
 
-type DeskView='directory'|'intro'|'transfer'|'mining'|'encrypted'|'overview';
-const viewFromHash=(hash:string):DeskView=>hash==='#intro'?'intro':hash==='#overview'?'overview':hash==='#mining'?'mining':hash==='#encrypted'?'encrypted':hash==='#transfer'?'transfer':'directory';
-
-export default function Home(){
- useLanguage();
- const [view,setView]=useState<DeskView>(()=>viewFromHash(typeof window!=='undefined'?window.location.hash:''));
- useEffect(()=>{
-  const changed=()=>{
-   if(!window.location.hash)window.history.replaceState(window.history.state,'','#directory');
-   setView(viewFromHash(window.location.hash));
-  };
-  changed();
-  window.addEventListener('hashchange',changed);
-  return()=>window.removeEventListener('hashchange',changed);
- },[]);
+export default function Home({initialView='directory'}:{initialView?:DeskView}={}){
+ const language=useLanguage();
+ const view=useDeskNavigation(initialView);
+ usePageMetadata(view,language);
+ const renderView=(target:DeskView)=>typeof window!=='undefined'||view===target;
+ const metadata=pageMetadata(view,language);
  const [endpoint,setEndpoint]=useState<string>(RPC_URLS[0]);
  const [account,setAccount]=useState<Account|null>(null);
  const [wallet,setWallet]=useState<OpenWallet|null>(null);
@@ -130,7 +123,7 @@ export default function Home(){
  const closeModal=(open:boolean)=>{if(!open&&!busy){if(phraseInput.current)phraseInput.current.value='';setModal(null);setError('');}};
  const resetTransaction=()=>{if(!complete(record)||tracking)return;sessionStorage.removeItem(PENDING_KEY);setRecord(null);setPrepared(null);setRecipient('');setAmount('');setError('');};
  const continueFromEncrypted=(address:string,accountIndex:number)=>{
-  window.location.hash='#transfer';
+  navigateToView('transfer');
   if(busy||record&&!complete(record)||tracking){setNote(t("请先处理普通账户中尚未结束的交易，再打开加密转出到账的账户。"));return;}
   lock();
   try{sessionStorage.removeItem(PENDING_KEY);}catch{/* Previous public history remains available. */}
@@ -148,9 +141,9 @@ export default function Home(){
   try{void Promise.resolve(ctx.registerTool(tool,{signal:life.signal})).catch(()=>{});}catch{/* optional browser API */}return()=>life.abort();
  },[endpoint]);
 
- return <div className="desk"><header className="topbar"><a className="wordmark" href="/"><span className="brandmark">Q</span><span>QTC<span className="wordmark-light"> {t("转账台")}</span></span></a><div className="network"><span className="network-dot"/>Quantus Mainnet</div><a className="quiet-link" href="https://explorer.quantus.com" target="_blank" rel="noreferrer">{t("区块浏览器")}<ArrowUpRight size={16}/></a><LanguageSwitcher/></header>
- <main className="workspace"><nav className="desk-navigation" aria-label={t("工具导航")}><a href="#directory" aria-current={view==='directory'?'page':undefined}>{t("网址导航")}</a><a href="#intro" aria-current={view==='intro'?'page':undefined}>{t("Quantus 项目介绍")}</a><a href="#overview" aria-current={view==='overview'?'page':undefined}>{t('QTC 总览')}</a><a href="#transfer" aria-current={view==='transfer'?'page':undefined}>{t("QTC 转账")}{record&&!complete(record)?t(" · 进行中"):''}</a><a href="#encrypted" aria-current={view==='encrypted'?'page':undefined}>{t('加密账户')}</a><a href="#mining" aria-current={view==='mining'?'page':undefined}>{t("挖矿成本计算器")}</a></nav><ReferralBanner/><div className="page-heading"><div><span className="eyebrow">{view==='directory'?'QUANTUS / DIRECTORY':view==='intro'?'QUANTUS / INTRODUCTION':view==='overview'?'QUANTUS / OVERVIEW':view==='mining'?'QUANTUS / MINING':view==='encrypted'?'QUANTUS / WORMHOLE':'QUANTUS / TRANSFER'}</span><h1>{view==='directory'?t('网址导航'):view==='intro'?t('Quantus 项目介绍'):view==='overview'?t('QTC 总览'):view==='mining'?t("算清每一枚 QTC 的成本"):view==='encrypted'?t("加密账户"):t("QTC 主网转账")}</h1>{view==='mining'&&<p className="mining-subtitle">{t("配置你的设备，看看当前算力下的产量、成本与盈亏。")}</p>}</div><div className="heading-links"><div className="heading-actions"><a className="community-link otc-link" href="https://docs.google.com/spreadsheets/d/1o7pVtQ-YKB0HHFsvPjXqkae1F0yCP4FxaxbNgBkkfU8/edit?usp=sharing" target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" aria-label={t("查看场外实时OTC成交，在新标签页打开")}><ArrowLeftRight size={17} aria-hidden="true"/><span>{t("场外实时OTC成交")}</span><ArrowUpRight size={16} aria-hidden="true"/></a><a className="community-link" href="https://t.me/QuantusCN" target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" aria-label={t("加入 Telegram 中文 Quantus 交流群，在新标签页打开")}><Send size={17} aria-hidden="true"/><span>{t("Telegram 中文 Quantus 交流群")}</span><ArrowUpRight size={16} aria-hidden="true"/></a><a className="author-link" href="https://x.com/kkmoat" target="_blank" rel="noopener noreferrer" aria-label={t("作者 X：@kkmoat，在新标签页打开")}>{t("作者 X：")}<strong>@kkmoat</strong><ArrowUpRight size={17} aria-hidden="true"/></a></div><span className="session-label"><LockKeyhole size={16}/> {view==='directory'?t('常用网址 · 分类直达'):view==='intro'?t('了解项目 · 无需钱包'):view==='overview'?t('公开数据 · 无需钱包'):view==='mining'?t("本地计算 · 无需钱包"):t("本地签名")}</span></div></div>
- <div className="desk-view" hidden={view!=='transfer'}>
+ return <div className="desk" itemScope itemType="https://schema.org/WebSite"><meta itemProp="name" content={SITE_NAME}/><link itemProp="url" href={SITE_ORIGIN+'/'}/><header className="topbar"><a className="wordmark" href="/"><span className="brandmark">Q</span><span>QTC<span className="wordmark-light">123</span></span></a><div className="network"><span className="network-dot"/>Quantus Mainnet</div><a className="quiet-link" href="https://explorer.quantus.com" target="_blank" rel="noreferrer">{t("区块浏览器")}<ArrowUpRight size={16}/></a><LanguageSwitcher/></header>
+ <main className="workspace" itemScope itemType="https://schema.org/WebPage"><meta itemProp="name" content={metadata.title}/><meta itemProp="description" content={metadata.description}/><link itemProp="url" href={canonicalUrl(view)}/><nav className="desk-navigation" aria-label={t("工具导航")}><a href="/" aria-current={view==='directory'?'page':undefined}>{t("网址导航")}</a><a href="/intro/" aria-current={view==='intro'?'page':undefined}>{t("Quantus 项目介绍")}</a><a href="/overview/" aria-current={view==='overview'?'page':undefined}>{t('QTC 总览')}</a><a href="/transfer/" aria-current={view==='transfer'?'page':undefined}>{t("QTC 转账")}{record&&!complete(record)?t(" · 进行中"):''}</a><a href="/encrypted/" aria-current={view==='encrypted'?'page':undefined}>{t('加密账户')}</a><a href="/mining/" aria-current={view==='mining'?'page':undefined}>{t("挖矿成本计算器")}</a></nav><ReferralBanner/><div className="page-heading"><div><span className="eyebrow">{view==='directory'?'QUANTUS / DIRECTORY':view==='intro'?'QUANTUS / INTRODUCTION':view==='overview'?'QUANTUS / OVERVIEW':view==='mining'?'QUANTUS / MINING':view==='encrypted'?'QUANTUS / WORMHOLE':'QUANTUS / TRANSFER'}</span><h1>{view==='directory'?t('Quantus 中文导航'):view==='intro'?t('Quantus 项目介绍'):view==='overview'?t('QTC 总览'):view==='mining'?t("QTC 挖矿成本计算器"):view==='encrypted'?t("加密账户"):t("QTC 主网转账")}</h1>{view==='mining'&&<p className="mining-subtitle">{t("配置你的设备，看看当前算力下的产量、成本与盈亏。")}</p>}</div><div className="heading-links"><div className="heading-actions"><a className="community-link otc-link" href="https://docs.google.com/spreadsheets/d/1o7pVtQ-YKB0HHFsvPjXqkae1F0yCP4FxaxbNgBkkfU8/edit?usp=sharing" target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" aria-label={t("查看场外实时OTC成交，在新标签页打开")}><ArrowLeftRight size={17} aria-hidden="true"/><span>{t("场外实时OTC成交")}</span><ArrowUpRight size={16} aria-hidden="true"/></a><a className="community-link" href="https://t.me/QuantusCN" target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" aria-label={t("加入 Telegram 中文 Quantus 交流群，在新标签页打开")}><Send size={17} aria-hidden="true"/><span>{t("Telegram 中文 Quantus 交流群")}</span><ArrowUpRight size={16} aria-hidden="true"/></a><a className="author-link" href="https://x.com/kkmoat" target="_blank" rel="noopener noreferrer" aria-label={t("作者 X：@kkmoat，在新标签页打开")}>{t("作者 X：")}<strong>@kkmoat</strong><ArrowUpRight size={17} aria-hidden="true"/></a></div><span className="session-label"><LockKeyhole size={16}/> {view==='directory'?t('常用网址 · 分类直达'):view==='intro'?t('了解项目 · 无需钱包'):view==='overview'?t('公开数据 · 无需钱包'):view==='mining'?t("本地计算 · 无需钱包"):t("本地签名")}</span></div></div>
+ {renderView('transfer')&&<div className="desk-view" hidden={view!=='transfer'}>
  {error&&!modal&&<div className="notice error" role="alert"><AlertCircle size={18}/><span>{t(error)}</span></div>}{note&&<div className="notice" role="status"><ShieldCheck size={18}/><span>{t(note)}</span></div>}
  <div className="desk-grid"><aside className="account-panel"><div className="panel-label"><span>{wallet?t("已打开付款钱包"):account?t("公开地址查询"):t("付款账户")}</span><Wallet size={19}/></div><div className="balance-label">{t("账户余额")}</div><div className="balance-number">{account?formatAmount(account.free):'—'}<span>QTC</span></div>
  {account?<div className="account-address"><span title={account.address}>{short(account.address)}</span><button aria-label={t("复制付款地址")} onClick={()=>copy(account.address)}>{copied===account.address?<Check size={15}/>:<Copy size={15}/>}</button><a href={explorer(account.address)} target="_blank" rel="noreferrer" aria-label={t("在区块浏览器查看付款账户")}><ArrowUpRight size={16}/></a></div>:<p className="subtle">{t("打开钱包或查询公开地址，读取主网余额。")}</p>}
@@ -180,12 +173,12 @@ export default function Home(){
    {history.length>historyLimit&&<Button className="secondary history-more" onClick={()=>setHistoryLimit(n=>n+10)}>{t("查看更多（已显示")}{historyLimit} / {history.length} {t("笔）")}</Button>}
   </>}
  </section>
- </div>
- <div className="desk-view" hidden={view!=='encrypted'}><EncryptedAccount active={view==='encrypted'} onUnlock={lock} onContinue={continueFromEncrypted}/></div>
- <div className="desk-view" hidden={view!=='directory'}><LinkDirectory/></div>
- <div className="desk-view" hidden={view!=='intro'}><QuantusIntroduction/></div>
- <div className="desk-view" hidden={view!=='overview'}><QtcOverview active={view==='overview'}/></div>
- <div className="desk-view" hidden={view!=='mining'}><MiningCalculator active={view==='mining'}/></div>
+ </div>}
+ {renderView('encrypted')&&<div className="desk-view" hidden={view!=='encrypted'}><EncryptedAccount active={view==='encrypted'} onUnlock={lock} onContinue={continueFromEncrypted}/></div>}
+ {renderView('directory')&&<div className="desk-view" hidden={view!=='directory'}><LinkDirectory/></div>}
+ {renderView('intro')&&<div className="desk-view" hidden={view!=='intro'}><QuantusIntroduction/></div>}
+ {renderView('overview')&&<div className="desk-view" hidden={view!=='overview'}><QtcOverview active={view==='overview'}/></div>}
+ {renderView('mining')&&<div className="desk-view" hidden={view!=='mining'}><MiningCalculator active={view==='mining'}/></div>}
  <footer><span>{t("独立社区工具 · 非 Quantus 官方产品")}</span><div className="footer-links"><a href="https://github.com/kkmoat/qtc-transfer-desk" target="_blank" rel="noopener noreferrer">{t("GitHub 开源")}</a><a href="/source/quantus-browser-crypto-source.zip" download>{t("签名组件源码")}</a><a href="/source/LICENSE.txt" target="_blank">GPL-3.0</a><div className="footer-contact"><button type="button" className="contact-button" onClick={copyContact} aria-label={t("联系我们，复制微信号 {0}", CONTACT_WECHAT)} title={t("点击复制微信号：{0}", CONTACT_WECHAT)}>{t("联系我们")}<Copy size={14} aria-hidden="true"/></button><span className="contact-status" role="status" aria-live="polite">{t(contactMessage)}</span></div></div></footer></main>
  <Dialog open={historyDetailHash!==null} onOpenChange={open=>{if(!open)closeHistory();}}><DialogContent className="wallet-dialog history-dialog"><DialogHeader><DialogTitle>{t("转账记录详情")}</DialogTitle><DialogDescription>{t("这是本地保存的交易信息。重新查询只核对链上结果，不会再次付款。")}</DialogDescription></DialogHeader>
  {historyDetail?<><div className="receipt-amount">{formatAmount(BigInt(historyDetail.amount))} <span>QTC</span></div><p className="history-detail-state" role="status">{historyTracking===historyDetail.hash?t("正在查询链上结果…"):t("上次查询结果：{0}", receiptStatus(historyDetail))}</p><p className="micro">{t(historyDetail.message)}</p>
@@ -200,7 +193,7 @@ export default function Home(){
  <Dialog open={modal!==null} onOpenChange={closeModal}><DialogContent showCloseButton={!busy} className="wallet-dialog" onEscapeKeyDown={e=>{if(busy)e.preventDefault();}} onPointerDownOutside={e=>{if(busy)e.preventDefault();}}><DialogHeader><DialogTitle>{modal==='watch'?t("查询公开地址"):t("在本地打开已有钱包")}</DialogTitle><DialogDescription>{modal==='watch'?t("只需公开收款地址，无需助记词。"):t("助记词只交给本页面的本地签名组件。请在可信设备上使用，先核对网站地址。")}</DialogDescription></DialogHeader>
  {error&&<div className="notice error" role="alert"><AlertCircle size={17}/><span>{t(error)}</span></div>}
  {modal==='watch'?<><label className="field-label" htmlFor="watch">{t("公开收款地址")}</label><Input id="watch" className="address-input" value={watchAddress} onChange={e=>setWatchAddress(e.target.value)} placeholder="qz…" autoComplete="off" disabled={!!busy}/><Button className="primary full" onClick={queryWatch} disabled={!!busy}>{busy?<LoaderCircle className="spin" size={17}/>:null}{t("查询主网余额")}</Button></>:<>
- <a className="encrypted-import-link" href="#encrypted" onClick={()=>closeModal(false)}>{t("导入 Encrypted Account？使用加密账户入口")}</a>
+ <a className="encrypted-import-link" href="/encrypted/" onClick={()=>closeModal(false)}>{t("导入 Encrypted Account？使用加密账户入口")}</a>
  <label className="field-label" htmlFor="expected">{t("已有钱包的收款地址")}</label><Input id="expected" className="address-input" value={expectedAddress} onChange={e=>setExpectedAddress(e.target.value)} placeholder={t("从官方钱包「接收」页面复制完整地址")} autoComplete="off" disabled={!!busy}/><p className="micro">{t("导入后必须与此地址完全一致，才会开放转账。")}</p>
  <label className="field-label" htmlFor="phrase">{t("助记词")}</label><Textarea id="phrase" ref={phraseInput} className="seed-input" placeholder={t("在这里输入你的助记词，以空格分隔")} autoComplete="off" autoCorrect="off" spellCheck={false} disabled={!!busy} data-1p-ignore data-lpignore="true"/><p className="micro">{t("不会保存到浏览器存储。关闭钱包后需要重新输入。")}</p>
  <div className="import-options"><div><label className="field-label" htmlFor="signature-scheme">{t("签名方案")}</label><Input id="signature-scheme" value={t("ML-DSA-65（新版账户）")} readOnly/></div><div><label className="field-label" htmlFor="account-index">{t("账户序号")}</label><Input id="account-index" type="text" inputMode="numeric" value={index} onChange={e=>setIndex(e.target.value)} disabled={!!busy}/></div></div><p className="micro">{t("仅支持 ML-DSA-65 新版账户，第一个账户序号通常为 0。地址不匹配时，请检查助记词、收款地址及账户序号。本工具不支持额外 BIP39 密码及自定义派生路径。")}</p><Button className="primary full" onClick={openWallet} disabled={!!busy}>{busy?<><LoaderCircle className="spin" size={17}/>{t("正在本地验证")}</>:t("验证地址并打开钱包")}</Button></>}

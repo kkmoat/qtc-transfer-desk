@@ -46,7 +46,7 @@ export function QuantusIntroduction() {
         <p className="intro-summary">{t('Quantus 是以数字货币为核心的独立区块链，结合后量子密码学、工作量证明和零知识证明。QTC 是网络原生币，用于链上价值转移；项目围绕量子计算威胁、交易隐私与可扩展性进行设计。')}</p>
         <div className="intro-actions">
           <a href="https://www.quantus.com/" {...external}>{t('访问 Quantus 官网')}<ArrowUpRight size={16} aria-hidden="true"/></a>
-          <a href="#overview">{t('查看 QTC 总览')}<ArrowUpRight size={16} aria-hidden="true"/></a>
+          <a href="/overview/">{t('查看 QTC 总览')}<ArrowUpRight size={16} aria-hidden="true"/></a>
         </div>
       </div>
       <dl className="intro-facts">
