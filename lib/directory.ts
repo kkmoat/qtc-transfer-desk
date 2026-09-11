@@ -34,7 +34,6 @@ export const DIRECTORY_CATEGORIES: readonly DirectoryCategory[] = [
       { label: '挖矿成本计算器', href: '/mining/' },
       { label: '视频教程', href: 'https://youtu.be/4PxgKMTHiOA?si=Hyq_3Oc7AN3bdVq7' },
       { label: '文字教程', href: 'https://decisive-savory-c10.notion.site/Quantus-Vast-3d6a1811fe6880c5ab1ef195516f2134' },
-      { label: 'quanpool', href: 'https://quanpool.com/' },
     ],
   },
   {
