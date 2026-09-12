@@ -10,6 +10,7 @@ export const DIRECTORY_EN: Readonly<Record<string, string>> = {
   'Quantus挖矿指南': 'Quantus mining guide',
   '视频教程': 'Video tutorial',
   '文字教程': 'Written tutorial',
+  '持币地址': 'Holder addresses',
   'Quantus白皮书': 'Quantus whitepaper',
   'Binance报道': 'Binance coverage',
   'Finbold报道': 'Finbold coverage',

@@ -1,6 +1,6 @@
 export const SITE_ORIGIN = 'https://qtc123.com';
 export const SITE_NAME = 'QTC123';
-export const VIEWS = ['directory', 'intro', 'overview', 'transfer', 'encrypted', 'mining'] as const;
+export const VIEWS = ['directory', 'intro', 'overview', 'transfer', 'encrypted', 'mining', 'holders'] as const;
 export type DeskView = typeof VIEWS[number];
 export const viewPath = (view: DeskView) => view === 'directory' ? '/' : `/${view}/`;
 export const canonicalUrl = (view: DeskView) => SITE_ORIGIN + viewPath(view);
@@ -38,6 +38,10 @@ const metadata = {
   mining: {
     zh: { title: 'QTC 挖矿成本与收益估算计算器｜QTC123', description: '根据 Quanpool 公开数据、设备算力、租金或电费，估算 QTC 产量和每枚挖矿成本；输入预期币价模拟收入与盈亏，查看计算依据。' },
     en: { title: 'QTC Mining Cost & Profitability Calculator | QTC123', description: 'Estimate QTC output and cost per coin using Quanpool public data, hashrate, rental or electricity costs. Model revenue and profit with your own price assumptions.' },
+  },
+  holders: {
+    zh: { title: 'QTC 持币地址与账户余额排行｜QTC123', description: '查看 Quantus 主网持币地址，按可用 QTC 余额从高到低排列，显示冻结余额、预留余额、账户总数和官方区块浏览器数据来源。' },
+    en: { title: 'QTC Holder Addresses & Account Balances | QTC123', description: 'Browse Quantus Mainnet holder addresses by available QTC balance, with frozen and reserved balances, account totals, and data from the official explorer API.' },
   },
 } as const;
 
