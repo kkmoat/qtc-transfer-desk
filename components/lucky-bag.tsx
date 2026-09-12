@@ -16,7 +16,7 @@ const TEXT = {
     title: 'Quantus 幸运福袋', formTitle: '领取你的 QTC 福袋', receiptTitle: 'QTC 领奖凭证',
     invitation: '你因为打开 qtc123 导航栏，从而被 Quantus（QTC）礼包砸中啦！',
     open: '打开福袋', opening: '正在打开…', close: '关闭福袋', continueClaim: '继续领取福袋',
-    remaining: '剩余', expired: '预留已到期。',
+    remaining: '剩余', expired: '预留已到期。', soldOut: '手慢啦，福袋已被抢完！', soldOutButton: '福袋已抢完',
     scan: '扫码添加 kk 微信', qrAlt: '添加 kk 微信的二维码',
     address: '填写 Quantus 收款地址', addressPlaceholder: '粘贴完整的 qz… 收款地址', walletHelp: '不知道 Quantus 地址？', walletLink: '打开官方钱包',
     wechat: '填写你的微信号', wechatPlaceholder: '填写微信号，方便核验好友关系',
@@ -33,7 +33,7 @@ const TEXT = {
     title: 'A lucky Quantus gift', formTitle: 'Claim your QTC lucky bag', receiptTitle: 'QTC claim receipt',
     invitation: 'You opened the qtc123 directory and a Quantus (QTC) gift landed in your lap!',
     open: 'Open lucky bag', opening: 'Opening…', close: 'Close lucky bag', continueClaim: 'Continue claiming',
-    remaining: 'Time left', expired: 'Your reservation has expired.',
+    remaining: 'Time left', expired: 'Your reservation has expired.', soldOut: 'Sorry, all lucky bags have been claimed.', soldOutButton: 'All bags claimed',
     scan: 'Add kk on WeChat', qrAlt: 'QR code for adding kk on WeChat',
     address: 'Enter your Quantus receiving address', addressPlaceholder: 'Paste your full qz… receiving address', walletHelp: 'Need a Quantus address?', walletLink: 'Open the official wallet',
     wechat: 'Enter your WeChat ID', wechatPlaceholder: 'Your WeChat ID for friend verification',
@@ -62,6 +62,7 @@ export function LuckyBag({ active }: { active: boolean }) {
   const claimCampaign = useRef<number | null>(null), activeRef = useRef(active), mounted = useRef(false), opened = useRef(false);
   const reservingRef = useRef(false), submittingRef = useRef(false), userClosed = useRef(false), requestEpoch = useRef(0);
   const closedOffers = useRef(new Set<number>());
+  const soldOutOffers = useRef(new Set<number>());
   const focusBeforeOpen = useRef<HTMLElement | null>(null);
   activeRef.current = active;
 
@@ -95,6 +96,9 @@ export function LuckyBag({ active }: { active: boolean }) {
     if (result.state === 'available' && result.campaign) {
       // Ignore a status response that raced with an explicit reserve request.
       if (reservingRef.current || reservationRef.current) return;
+      // Once this visitor loses the final allocation race, later status polls
+      // must not re-enable the same campaign's open button.
+      if (soldOutOffers.current.has(result.campaign.id)) return;
       const changed = offerRef.current?.id !== result.campaign.id;
       updateOffer(result.campaign);
       if (claimRef.current && claimCampaign.current !== result.campaign.id) {
@@ -174,9 +178,9 @@ export function LuckyBag({ active }: { active: boolean }) {
     } catch (reason) {
       if (!mounted.current) return;
       if (reason instanceof LuckyBagApiError && (reason.code === 'campaign_full' || reason.code === 'campaign_finished')) {
-        closedOffers.current.add(current.id);
+        closedOffers.current.add(current.id); soldOutOffers.current.add(current.id);
         if (offerRef.current?.id === current.id) updateOffer(null);
-        opened.current = false; userClosed.current = true; setOpen(false); clearForm();
+        setStage('gift'); setError('soldOut');
       } else setError(reason instanceof Error ? reason : new Error('REQUEST_FAILED'));
     } finally {
       reservingRef.current = false;
@@ -232,7 +236,7 @@ export function LuckyBag({ active }: { active: boolean }) {
           <div className="lucky-bag-visual" aria-hidden="true"><Sparkles className="lucky-bag-sparkle first" size={23}/><div className="lucky-bag-emblem"><Gift size={58}/><strong>QTC</strong></div><Sparkles className="lucky-bag-sparkle second" size={18}/></div>
           <p className="lucky-bag-invitation">{text.invitation}</p>
           {errorText && <div className="lucky-bag-error" role="alert"><AlertCircle size={16} aria-hidden="true"/><span>{errorText}</span></div>}
-          <button type="button" className="lucky-bag-primary" disabled={!offer || reserving} onClick={openLuckyBag}>{reserving ? <LoaderCircle size={17} className="spin" aria-hidden="true"/> : <Gift size={18} aria-hidden="true"/>}{reserving ? text.opening : text.open}</button>
+          <button type="button" className="lucky-bag-primary" disabled={!offer || reserving} onClick={openLuckyBag}>{reserving ? <LoaderCircle size={17} className="spin" aria-hidden="true"/> : <Gift size={18} aria-hidden="true"/>}{error === 'soldOut' ? text.soldOutButton : reserving ? text.opening : text.open}</button>
         </> : <form className="lucky-bag-form" onSubmit={submit} noValidate aria-busy={submitting}>
           <div className="lucky-bag-step"><span className="lucky-bag-step-number" aria-hidden="true">1</span><div className="lucky-bag-step-body"><h3>{text.scan}</h3><div className="lucky-bag-qr-row"><img className="lucky-bag-qr" src={qr} width={1194} height={1575} alt={text.qrAlt}/></div></div></div>
           <div className="lucky-bag-step"><span className="lucky-bag-step-number" aria-hidden="true">2</span><div className="lucky-bag-step-body"><label htmlFor={id + '-address'}>{text.address}</label><input id={id + '-address'} name="quantus-address" type="text" value={address} onChange={event => setAddress(event.target.value)} disabled={submitting} maxLength={80} autoComplete="off" autoCapitalize="off" spellCheck={false} placeholder={text.addressPlaceholder} aria-describedby={id + '-wallet-help'}/><p className="lucky-bag-wallet-help" id={id + '-wallet-help'}><a href={wallet} {...external}>{text.walletHelp} {text.walletLink}<ArrowUpRight size={13} aria-hidden="true"/></a></p></div></div>

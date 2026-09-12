@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { enterLuckyBag, parseLuckyBagState, reserveLuckyBag } from '../lib/lucky-bag.ts';
+import { enterLuckyBag, LuckyBagApiError, parseLuckyBagState, reserveLuckyBag } from '../lib/lucky-bag.ts';
 
 const campaign = { id: 7, title: 'Test campaign', totalCount: 10, totalAmount: '0.1000', remainingCount: 10, claimedCount: 0 };
 
@@ -55,6 +55,25 @@ test('reserve starts only after an explicit campaign request and shares rapid do
     assert.deepEqual(JSON.parse(String(requestInit?.body)), { campaignId: campaign.id });
     releaseResponse();
     assert.deepEqual(await first, { state: 'reserved', campaign, reservationId: 'reservation-token', expiresAt: 1_800_000 });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('reserve preserves sold-out response codes for the invitation UI', async () => {
+  const originalFetch = globalThis.fetch;
+  let code = 'campaign_full';
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    error: code === 'campaign_full' ? '本场福袋名额暂时均已预留。' : '本场福袋已全部领取或过期。',
+    code,
+  }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+  try {
+    for (const [campaignId, expected] of [[campaign.id, 'campaign_full'], [campaign.id + 1, 'campaign_finished']] as const) {
+      code = expected;
+      await assert.rejects(reserveLuckyBag(campaignId), error =>
+        error instanceof LuckyBagApiError && error.status === 409 && error.code === expected,
+      );
+    }
   } finally {
     globalThis.fetch = originalFetch;
   }
