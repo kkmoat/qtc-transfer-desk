@@ -31,7 +31,7 @@ const sitemap = await readFile('dist/sitemap.xml', 'utf8');
 assert.equal([...sitemap.matchAll(/<loc>/g)].length, VIEWS.length);
 for (const view of VIEWS) assert(sitemap.includes('<loc>' + canonicalUrl(view) + '</loc>'));
 assert(!sitemap.includes('#'));
-assert((await readFile('dist/robots.txt', 'utf8')).includes('Sitemap: https://qtc123.com/sitemap.xml'));
+assert((await readFile('dist/robots.txt', 'utf8')).includes('Sitemap: https://www.qtc123.com/sitemap.xml'));
 assert(!DOCUMENT_CSP.includes("script-src 'self' 'unsafe-inline'"));
 assert(!DOCUMENT_CSP.includes("'unsafe-eval'"));
 const config = JSON.parse(await readFile('vercel.json', 'utf8'));

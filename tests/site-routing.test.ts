@@ -8,6 +8,7 @@ test('root stays a directory while every tool has a directly accessible URL', ()
     assert.equal(viewFromPath(viewPath(view)), view);
     assert.equal(viewFromLocation(viewPath(view)), view);
     assert(!canonicalUrl(view).includes('#'));
+    assert(canonicalUrl(view).startsWith('https://www.qtc123.com/'));
   }
   assert.equal(viewFromPath('/transfer'), 'transfer');
   assert.equal(viewFromPath('/missing/'), undefined);

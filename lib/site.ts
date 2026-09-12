@@ -1,4 +1,4 @@
-export const SITE_ORIGIN = 'https://qtc123.com';
+export const SITE_ORIGIN = 'https://www.qtc123.com';
 export const SITE_NAME = 'QTC123';
 export const VIEWS = ['directory', 'intro', 'overview', 'transfer', 'encrypted', 'mining', 'holders', 'pool'] as const;
 export type DeskView = typeof VIEWS[number];
