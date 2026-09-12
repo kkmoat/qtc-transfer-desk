@@ -11,7 +11,7 @@ export function ReferralBanner() {
       <span className="referral-icon" aria-hidden="true"><Gift size={25} /></span>
       <div className="referral-content">
         <div className="referral-title"><strong>{t("BINANCE 币安返手续费注册")}</strong><span className="referral-label">{t("推广")}</span></div>
-        <p>{t("通过作者邀请链接注册")}<span className="referral-code">{t("邀请码")}<b>HA6EW1HC</b></span></p>
+        <p>{t("通过作者邀请链接注册")}<span className="referral-code">{t("邀请码")}<b>YBNJKGJ6</b></span></p>
         <span className="referral-domain">{t("跳转至 www.bi86.com")}</span>
       </div>
       <span className="referral-cta">{t("打开注册链接")}<ArrowUpRight size={17} aria-hidden="true" /></span>
