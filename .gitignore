@@ -16,3 +16,18 @@ crypto/pkg-web/
 .vercel
 
 crypto/pkg-node/
+
+# Private lucky-bag runtime state
+__pycache__/
+*.pyc
+*.sqlite3
+*.sqlite3-*
+.venv/
+server/data/
+
+# Private campaign administration and server sources are deployed separately.
+/admin/
+/server/
+/deploy/lucky-bag/
+/server-api-contract.md
+/scripts/preview-lucky-bag.mjs

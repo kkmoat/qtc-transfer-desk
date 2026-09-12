@@ -10,3 +10,8 @@
 /SECURITY.md
 /LICENSE
 /THIRD_PARTY_NOTICES.md
+
+/server/
+/admin/
+/deploy/
+/server-api-contract.md

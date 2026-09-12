@@ -11,7 +11,7 @@ QTC 转账台是独立社区工具，**未接受独立安全审计，也不保�
 - 加密账户恢复在独立 Worker 中持有官方派生的自擦除 seed，secret/first hash 不返回主线程。页面只获取公开地址、nullifier、验证摘要及最终公开证明。零知识证明在同一 Worker 的独立按需加载 WASM 模块中生成，私有 witness、secret、first hash 不返回主线程。加密账户离开对应工具页面时也锁定；本地证明期间暂停闲置计时，证明超时仍会销毁 Worker。
 - 加密余额查询只访问固定官方索引器 `https://sqm.quantus.com/v1/graphql` 与官方主网 RPC，在最终确认区块核对网络、元数据、完整转入计数及花费标记。结果不包含近期未最终确认的收支，不等于实时可支出额。地址发现有 gap=20 与扫描上限；数据不完整时显示未知。地址与 nullifier 查询仍可能被服务方关联，请勿视为匿名查询。
 - 挖矿计算器仅下载 Quanpool 五个固定公开路径的 JSON，使用无凭据 GET、不跟随重定向、不执行远程脚本。设备和价格输入只留在页面内存，不传给矿池；响应经过类型、范围与鲜度校验。外部矿池仍是第三方数据源，估算不等同于经独立核验的链上收益。主页面 CSP 允许这些路径，签名 Worker 不开放外部联网。
-- Vercel 部署只提供静态文件；项目没有应用层 API、数据库、服务器钱包、私钥环境变量或内置 Analytics。托管平台和 RPC 提供方仍可能记录 IP、访问时间及公开查询等信息。
+- Vercel 备用部署只提供静态文件。香港生产站的福袋登记使用独立 API 与 SQLite 数据库，保存经用户同意提交的公开收款地址、微信号、IP 和时间；钱包签名功能仍无服务器钱包或私钥配置。托管平台和 RPC 提供方也可能记录普通访问日志。
 
 ## 本地存储包含什么
 
@@ -71,3 +71,12 @@ QTC 转账台是独立社区工具，**未接受独立安全审计，也不保�
 The overview reads finalized aggregate supply from the existing official RPC allowlist, and public `global.tickers` from `wss://safe.trade/api/v2/websocket/public`. It never reads or submits wallet state. Only `quantususdt` can become the Quantus price; the former `quanusdt` market and unrelated `qtcusdt` market are ignored. Network failures are not converted to zero or cached values labeled as live. Response sizes, number formats, mainnet identity, and fixed snapshot hashes are validated. The document allows that one public WebSocket path; the isolated signing Worker still has `connect-src 'self'`. No new server endpoint, third-party script, or API credential is added.
 
 Circulating supply estimates subtract unvested on-chain schedule amounts at the same finalized block. The reader checks the supported runtime and storage layout, reads every sequential schedule ID in bounded batches, and reconciles outstanding obligations against the vesting pot balance. Missing or inconsistent responses, extra unmatched pot deposits, unsupported runtimes, and more than 256 historical IDs return unavailable. MC and FDV use integer arithmetic on the decimal exchange price and are indicative USDT values. This adds only public reads on the existing RPC allowlist; no wallet credentials are involved.
+
+## 福袋登记与管理后台
+
+- 福袋 API 仅用于活动名额、收款信息登记和人工处理状态；不会打开钱包、接收助记词、持有私钥、签名或发送 QTC。显示的奖额是活动配置预算，系统不验证活动钱包资金。管理员标记“已发奖”只登记人工转账哈希，不证明链上已到账。
+- 每个活动以整数万分之一 QTC 分配严格等于预算的随机奖额。SQLite 事务保护预留、顺延、唯一领取和名额上限；关闭活动会使未提交预留失效。重复同一领取请求返回原记录。每个访客凭据、规范化地址和微信号每场最多登记一次；网络限速和同 IP 预留上限只能降低滥用，不能证明一人一袋。
+- 报名表明确说明收集 IP、时间、Quantus 地址、微信号用于人工好友核验和发奖，并要求用户勾选同意。资料只保存在香港服务器非公开目录，后台必须登录才能读取，不加入公开 HTML、URL、前端持久存储或构建产物。
+- `admin.qtc123.com` 使用独立来源、scrypt 密码哈希、短期 HttpOnly Secure 会话、来源检查和写操作 CSRF 令牌。生产 Cookie 使用 `__Host-` 前缀；登录及接口限速。Nginx 覆盖访客 IP 请求头，服务只监听回环地址。
+- 默认无开启活动。登记状态依次为待核验、已核验、人工标记已发奖；拒绝和已发奖不可撤回成可重新领取，管理员可记录备注。原始随机分配不等于已付款。低于主网账户最低存款的奖额可能无法创建新收款账户，人工发奖前需核对实际链上条件。
+- 数据库和备份不在站点静态目录内。每日生成一致性备份，保留最近 7 份；领取记录和管理审计保留至运营者按实际需要处理。普通备份不替代管理员账号和服务器访问控制。
