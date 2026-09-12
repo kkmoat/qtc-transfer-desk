@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { AlertCircle, ArrowUpRight, CheckCircle2, Clock3, Gift, LoaderCircle, Sparkles, X } from 'lucide-react';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { DIRECTORY_CATEGORIES } from '@/lib/directory';
 import { useLanguage } from '@/lib/i18n';
 import { addressBytes } from '@/lib/quantus/protocol';
 import { claimLuckyBag, enterLuckyBag, LuckyBagApiError, reserveLuckyBag, type LuckyBagCampaign, type LuckyBagClaim, type LuckyBagState } from '@/lib/lucky-bag';
 
-const qr = DIRECTORY_CATEGORIES.flatMap(category => category.links).find(link => link.action === 'wechat')?.href ?? '/images/quantus-wechat.jpg';
+const qr = '/images/kkmoat-wechat.png';
 const wallet = 'https://www.quantus.com/wallet/';
 const external = { target: '_blank', rel: 'noopener noreferrer', referrerPolicy: 'no-referrer' } as const;
 type Reservation = { id: string; expiresAt: number; campaignId: number };
@@ -17,11 +16,11 @@ const TEXT = {
     invitation: '天啦噜！因为访问 qtc123 ，你被 Quantus(QTC) 礼包砸中啦！',
     open: '打开福袋', opening: '正在打开…', close: '关闭福袋', continueClaim: '继续领取福袋',
     remaining: '剩余', expired: '预留已到期。', soldOut: '手慢啦，福袋已被抢完！', soldOutButton: '福袋已抢完',
-    scan: '扫码添加 kk 微信', qrAlt: '添加 kk 微信的二维码',
+    scan: '扫码添加 kkmoat 微信', qrAlt: '添加 kkmoat 微信的二维码',
     address: '填写 Quantus 收款地址', addressPlaceholder: '粘贴完整的 qz… 收款地址', walletHelp: '不知道 Quantus 地址？', walletLink: '打开官方钱包',
     wechat: '填写你的微信号', wechatPlaceholder: '填写微信号，方便核验好友关系',
     consent: '我同意本活动记录 IP、访问及提交时间，并保存我提交的 Quantus 地址和微信号，用于人工核验与发奖。',
-    manual: '这是领奖凭证。添加 kk 微信后，工作人员将核验好友关系并发放奖励。',
+    manual: '这是领奖凭证。添加 kkmoat 微信后，工作人员将核验好友关系并发放奖励。',
     submit: '提交领奖登记', submitting: '正在提交登记…', amount: '本次登记奖励', number: '登记编号', time: '提交时间',
     pending: '待核验 · 尚未转账', verified: '核验通过 · 待人工发放', paid: '工作人员已标记发放', rejected: '未通过核验',
     noTransfer: '登记成功并不代表已转账。本页面不会自动发放 QTC。', paidNote: '工作人员已将登记标记为已发放，请在钱包中核对。本页面不执行转账。', rejectedNote: '此登记未通过工作人员核验，请联系 kk 了解详情。',
@@ -34,11 +33,11 @@ const TEXT = {
     invitation: 'You opened the qtc123 directory and a Quantus (QTC) gift landed in your lap!',
     open: 'Open lucky bag', opening: 'Opening…', close: 'Close lucky bag', continueClaim: 'Continue claiming',
     remaining: 'Time left', expired: 'Your reservation has expired.', soldOut: 'Sorry, all lucky bags have been claimed.', soldOutButton: 'All bags claimed',
-    scan: 'Add kk on WeChat', qrAlt: 'QR code for adding kk on WeChat',
+    scan: 'Add kkmoat on WeChat', qrAlt: 'QR code for adding kkmoat on WeChat',
     address: 'Enter your Quantus receiving address', addressPlaceholder: 'Paste your full qz… receiving address', walletHelp: 'Need a Quantus address?', walletLink: 'Open the official wallet',
     wechat: 'Enter your WeChat ID', wechatPlaceholder: 'Your WeChat ID for friend verification',
     consent: 'I agree that this campaign records my IP, visit and submission times, and stores my submitted Quantus address and WeChat ID for manual verification and reward distribution.',
-    manual: 'This is a claim receipt. After you add kk on WeChat, staff will verify the friendship and distribute the reward.',
+    manual: 'This is a claim receipt. After you add kkmoat on WeChat, staff will verify the friendship and distribute the reward.',
     submit: 'Register my claim', submitting: 'Submitting your registration…', amount: 'Registered reward', number: 'Registration ID', time: 'Submitted',
     pending: 'Pending verification · Not transferred', verified: 'Verified · Awaiting manual payment', paid: 'Staff marked this as paid', rejected: 'Verification declined',
     noTransfer: 'A successful registration does not mean a transfer has occurred. This page does not send QTC automatically.', paidNote: 'Staff marked this registration as paid. Please check your wallet. This page does not execute transfers.', rejectedNote: 'Staff declined this registration. Please contact kk for details.',
@@ -238,7 +237,7 @@ export function LuckyBag({ active }: { active: boolean }) {
           {errorText && <div className="lucky-bag-error" role="alert"><AlertCircle size={16} aria-hidden="true"/><span>{errorText}</span></div>}
           <button type="button" className="lucky-bag-primary" disabled={!offer || reserving} onClick={openLuckyBag}>{reserving ? <LoaderCircle size={17} className="spin" aria-hidden="true"/> : <Gift size={18} aria-hidden="true"/>}{error === 'soldOut' ? text.soldOutButton : reserving ? text.opening : text.open}</button>
         </> : <form className="lucky-bag-form" onSubmit={submit} noValidate aria-busy={submitting}>
-          <div className="lucky-bag-step"><span className="lucky-bag-step-number" aria-hidden="true">1</span><div className="lucky-bag-step-body"><h3>{text.scan}</h3><div className="lucky-bag-qr-row"><img className="lucky-bag-qr" src={qr} width={1194} height={1575} alt={text.qrAlt}/></div></div></div>
+          <div className="lucky-bag-step"><span className="lucky-bag-step-number" aria-hidden="true">1</span><div className="lucky-bag-step-body"><h3>{text.scan}</h3><div className="lucky-bag-qr-row"><img className="lucky-bag-qr" src={qr} width={785} height={784} alt={text.qrAlt}/></div></div></div>
           <div className="lucky-bag-step"><span className="lucky-bag-step-number" aria-hidden="true">2</span><div className="lucky-bag-step-body"><label htmlFor={id + '-address'}>{text.address}</label><input id={id + '-address'} name="quantus-address" type="text" value={address} onChange={event => setAddress(event.target.value)} disabled={submitting} maxLength={80} autoComplete="off" autoCapitalize="off" spellCheck={false} placeholder={text.addressPlaceholder} aria-describedby={id + '-wallet-help'}/><p className="lucky-bag-wallet-help" id={id + '-wallet-help'}><a href={wallet} {...external}>{text.walletHelp} {text.walletLink}<ArrowUpRight size={13} aria-hidden="true"/></a></p></div></div>
           <div className="lucky-bag-step"><span className="lucky-bag-step-number" aria-hidden="true">3</span><div className="lucky-bag-step-body"><label htmlFor={id + '-wechat'}>{text.wechat}</label><input id={id + '-wechat'} name="wechat-id" type="text" value={wechat} onChange={event => setWechat(event.target.value)} disabled={submitting} maxLength={64} autoComplete="off" autoCapitalize="off" spellCheck={false} placeholder={text.wechatPlaceholder}/></div></div>
           <label className="lucky-bag-consent" htmlFor={id + '-consent'}><input id={id + '-consent'} type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} disabled={submitting}/><span>{text.consent}</span></label>
