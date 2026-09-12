@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Activity, ArrowUpRight, Clock3, Gauge, Pickaxe, RefreshCw, UsersRound } from 'lucide-react';
+import { Activity, Clock3, Gauge, Pickaxe, RefreshCw, UsersRound } from 'lucide-react';
 import { locale, t, useLanguage } from '@/lib/i18n';
-import { fetchPoolLive, formatHashrate, POOL_HOME_URL, POOL_REFRESH_MS, type PoolLiveSnapshot } from '@/lib/pool-live';
+import { fetchPoolLive, formatHashrate, POOL_REFRESH_MS, type PoolLiveSnapshot } from '@/lib/pool-live';
 
 const number = (value: number | bigint) => value.toLocaleString(locale(), { maximumFractionDigits: 2 });
 const percent = (value: number) => `${value.toLocaleString(locale(), { maximumFractionDigits: 2 })}%`;
@@ -65,7 +65,7 @@ export function PoolHashrate({ active }: { active: boolean }) {
       </dl></article>
     </div>
     <div className="pool-ranking"><div className="pool-ranking-title"><div><h2>{t('1小时算力排行')}</h2><p>{t('矿工地址（已脱敏）')}</p></div><UsersRound size={22} /></div><div className="pool-table-wrap"><table><thead><tr><th>{t('排名')}</th><th>{t('矿工地址（已脱敏）')}</th><th>{t('矿机')}</th><th>{t('1小时算力')}</th><th>{t('每小时份额')}</th><th>{t('模式')}</th></tr></thead><tbody>{snapshot?.topMiners.map((miner, index) => <tr key={miner.address}><td className="pool-rank">#{index + 1}</td><td className="pool-address">{miner.address}</td><td>{number(miner.workers)}</td><td><strong>{formatHashrate(miner.hashrate1h, locale())}</strong></td><td>{number(miner.shares1h)}</td><td><span className={miner.solo ? 'pool-mode solo' : 'pool-mode'}>{miner.solo ? 'Solo' : t('普通')}</span></td></tr>)}</tbody></table>{!snapshot && <div className="pool-empty">{loading ? t('正在读取 Quanpool 实时数据…') : t('矿池实时数据暂不可用。')}</div>}</div></div>
-    <div className="pool-source"><p><Clock3 size={15} />{snapshot ? t('数据时间：{0}。', new Date(snapshot.sourceAt).toLocaleString(locale(), { hour12: false })) : t('等待矿池数据。')}</p><a href={POOL_HOME_URL} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">{t('前往 Quanpool 查看原始数据')}<ArrowUpRight size={14} /></a></div>
+    <div className="pool-source"><p><Clock3 size={15} />{snapshot ? t('数据时间：{0}。', new Date(snapshot.sourceAt).toLocaleString(locale(), { hour12: false })) : t('等待矿池数据。')}</p></div>
     <p className="pool-note">{t('矿池算力按 Quanpool 最近1小时接受的工作量计算，包含 Solo 矿机。全网算力按网络难度和实测平均区块时间估算。')} {t('矿池数据受统计窗口、难度调整和网络延迟影响，仅供实时观察。')}</p>
   </section>;
 }

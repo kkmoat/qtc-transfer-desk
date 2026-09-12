@@ -36,7 +36,6 @@ export const POOL_EN: Readonly<Record<string, string>> = {
   '等待矿池数据。': 'Waiting for pool data.',
   '矿池算力按 Quanpool 最近1小时接受的工作量计算，包含 Solo 矿机。全网算力按网络难度和实测平均区块时间估算。': 'Pool hashrate is calculated from work accepted by Quanpool during the last hour and includes solo miners. Network hashrate is estimated from network difficulty and measured average block time.',
   '矿池数据受统计窗口、难度调整和网络延迟影响，仅供实时观察。': 'Pool data is affected by reporting windows, difficulty adjustments, and network latency and is provided for live observation only.',
-  '前往 Quanpool 查看原始数据': 'View source data on Quanpool',
   '秒': 'sec',
   '{0}秒': '{0} sec',
   '{0}分钟': '{0} min',

@@ -5,7 +5,6 @@ export const POOL_LIVE_URLS = [
   'https://quanpool.com/api/miners/mainnet',
   'https://quanpool.com/api/chains',
 ] as const;
-export const POOL_HOME_URL = 'https://quanpool.com/';
 export const POOL_REFRESH_MS = 30_000;
 const MAX_RESPONSE_BYTES = 1_000_000;
 const MAX_DATA_AGE_MS = 5 * 60_000;
