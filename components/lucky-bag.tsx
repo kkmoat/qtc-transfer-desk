@@ -19,8 +19,7 @@ const TEXT = {
     scan: '扫码添加 kkmoat 微信', qrAlt: '添加 kkmoat 微信的二维码',
     address: '填写 Quantus 收款地址', addressPlaceholder: '粘贴完整的 qz… 收款地址', walletHelp: '不知道 Quantus 地址？', walletLink: '打开官方钱包',
     wechat: '填写你的微信号', wechatPlaceholder: '填写微信号，方便核验好友关系',
-    consent: '我同意本活动记录 IP、访问及提交时间，并保存我提交的 Quantus 地址和微信号，用于人工核验与发奖。',
-    manual: '这是领奖凭证。添加 kkmoat 微信后，工作人员将核验好友关系并发放奖励。',
+    consent: '我同意仅记录 IP、访问及提交时间，并保存提交的地址和微信号，用于核验与发奖。',
     submit: '提交领奖登记', submitting: '正在提交登记…', amount: '本次登记奖励', number: '登记编号', time: '提交时间',
     pending: '待核验 · 尚未转账', verified: '核验通过 · 待人工发放', paid: '工作人员已标记发放', rejected: '未通过核验',
     noTransfer: '登记成功并不代表已转账。本页面不会自动发放 QTC。', paidNote: '工作人员已将登记标记为已发放，请在钱包中核对。本页面不执行转账。', rejectedNote: '此登记未通过工作人员核验，请联系 kk 了解详情。',
@@ -36,8 +35,7 @@ const TEXT = {
     scan: 'Add kkmoat on WeChat', qrAlt: 'QR code for adding kkmoat on WeChat',
     address: 'Enter your Quantus receiving address', addressPlaceholder: 'Paste your full qz… receiving address', walletHelp: 'Need a Quantus address?', walletLink: 'Open the official wallet',
     wechat: 'Enter your WeChat ID', wechatPlaceholder: 'Your WeChat ID for friend verification',
-    consent: 'I agree that this campaign records my IP, visit and submission times, and stores my submitted Quantus address and WeChat ID for manual verification and reward distribution.',
-    manual: 'This is a claim receipt. After you add kkmoat on WeChat, staff will verify the friendship and distribute the reward.',
+    consent: 'I agree to record only the IP address, visit and submission times, and to save the submitted address and WeChat ID for verification and reward distribution.',
     submit: 'Register my claim', submitting: 'Submitting your registration…', amount: 'Registered reward', number: 'Registration ID', time: 'Submitted',
     pending: 'Pending verification · Not transferred', verified: 'Verified · Awaiting manual payment', paid: 'Staff marked this as paid', rejected: 'Verification declined',
     noTransfer: 'A successful registration does not mean a transfer has occurred. This page does not send QTC automatically.', paidNote: 'Staff marked this registration as paid. Please check your wallet. This page does not execute transfers.', rejectedNote: 'Staff declined this registration. Please contact kk for details.',
@@ -224,7 +222,7 @@ export function LuckyBag({ active }: { active: boolean }) {
         <DialogHeader className="lucky-bag-header">
           <p className="lucky-bag-kicker"><Sparkles size={14} aria-hidden="true"/> QUANTUS · QTC</p>
           <DialogTitle>{claim ? text.receiptTitle : stage === 'gift' ? text.title : text.formTitle}</DialogTitle>
-          <DialogDescription className={claim ? undefined : 'lucky-bag-a11y-description'}>{claim ? text.manual : stage === 'gift' ? text.invitation : text.formTitle}</DialogDescription>
+          <DialogDescription className="lucky-bag-a11y-description">{claim ? text.receiptTitle : stage === 'gift' ? text.invitation : text.formTitle}</DialogDescription>
         </DialogHeader>
         {claim ? <div className="lucky-bag-receipt" role="status">
           <div className="lucky-bag-receipt-amount"><span>{text.amount}</span><strong>{claim.amount} <small>QTC</small></strong><div className="lucky-bag-pending"><CheckCircle2 size={14} aria-hidden="true"/>{receiptStatus}</div></div>
@@ -241,7 +239,6 @@ export function LuckyBag({ active }: { active: boolean }) {
           <div className="lucky-bag-step"><span className="lucky-bag-step-number" aria-hidden="true">2</span><div className="lucky-bag-step-body"><label htmlFor={id + '-address'}>{text.address}</label><input id={id + '-address'} name="quantus-address" type="text" value={address} onChange={event => setAddress(event.target.value)} disabled={submitting} maxLength={80} autoComplete="off" autoCapitalize="off" spellCheck={false} placeholder={text.addressPlaceholder} aria-describedby={id + '-wallet-help'}/><p className="lucky-bag-wallet-help" id={id + '-wallet-help'}><a href={wallet} {...external}>{text.walletHelp} {text.walletLink}<ArrowUpRight size={13} aria-hidden="true"/></a></p></div></div>
           <div className="lucky-bag-step"><span className="lucky-bag-step-number" aria-hidden="true">3</span><div className="lucky-bag-step-body"><label htmlFor={id + '-wechat'}>{text.wechat}</label><input id={id + '-wechat'} name="wechat-id" type="text" value={wechat} onChange={event => setWechat(event.target.value)} disabled={submitting} maxLength={64} autoComplete="off" autoCapitalize="off" spellCheck={false} placeholder={text.wechatPlaceholder}/></div></div>
           <label className="lucky-bag-consent" htmlFor={id + '-consent'}><input id={id + '-consent'} type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} disabled={submitting}/><span>{text.consent}</span></label>
-          <p className="lucky-bag-note">{text.manual}</p>
           {errorText && <div className="lucky-bag-error" role="alert"><AlertCircle size={16} aria-hidden="true"/><span>{errorText}</span></div>}
           <button type="submit" className="lucky-bag-primary" disabled={submitting || !reservation || seconds === 0}>{submitting ? <LoaderCircle size={17} className="spin" aria-hidden="true"/> : <Gift size={17} aria-hidden="true"/>}{submitting ? text.submitting : text.submit}</button>
           <p className="lucky-bag-timing"><Clock3 size={14} aria-hidden="true"/>{seconds > 0 ? text.remaining + ' ' + countdown : text.expired}</p>
