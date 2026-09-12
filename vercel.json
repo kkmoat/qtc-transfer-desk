@@ -12,7 +12,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://rpc1-mainnet.quantus.com https://rpc2-mainnet.quantus.com https://quanpool.com/api/terms https://quanpool.com/api/stats/mainnet https://quanpool.com/api/luck/mainnet https://quanpool.com/api/rounds/mainnet https://quanpool.com/api/chains https://sqm.quantus.com/v1/graphql wss://safe.trade/api/v2/websocket/public; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+          "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://rpc1-mainnet.quantus.com https://rpc2-mainnet.quantus.com https://quanpool.com/api/terms https://quanpool.com/api/stats/mainnet https://quanpool.com/api/luck/mainnet https://quanpool.com/api/rounds/mainnet https://quanpool.com/api/miners/mainnet https://quanpool.com/api/chains https://sqm.quantus.com/v1/graphql wss://safe.trade/api/v2/websocket/public; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
         },
         {
           "key": "X-Frame-Options",

@@ -1,6 +1,6 @@
 export const SITE_ORIGIN = 'https://qtc123.com';
 export const SITE_NAME = 'QTC123';
-export const VIEWS = ['directory', 'intro', 'overview', 'transfer', 'encrypted', 'mining', 'holders'] as const;
+export const VIEWS = ['directory', 'intro', 'overview', 'transfer', 'encrypted', 'mining', 'holders', 'pool'] as const;
 export type DeskView = typeof VIEWS[number];
 export const viewPath = (view: DeskView) => view === 'directory' ? '/' : `/${view}/`;
 export const canonicalUrl = (view: DeskView) => SITE_ORIGIN + viewPath(view);
@@ -42,6 +42,10 @@ const metadata = {
   holders: {
     zh: { title: 'QTC 持币地址与账户余额排行｜QTC123', description: '查看 Quantus 主网持币地址，按可用 QTC 余额从高到低排列，显示冻结余额、预留余额、账户总数和官方区块浏览器数据来源。' },
     en: { title: 'QTC Holder Addresses & Account Balances | QTC123', description: 'Browse Quantus Mainnet holder addresses by available QTC balance, with frozen and reserved balances, account totals, and data from the official explorer API.' },
+  },
+  pool: {
+    zh: { title: 'QTC 矿池实时算力与 Quanpool 数据｜QTC123', description: '查看 Quanpool 的 QTC 近 1 小时矿池算力、全网估算算力、矿池占比、幸运值、当前轮次、活跃矿工、矿机数量和矿工算力排行。' },
+    en: { title: 'QTC Live Pool Hashrate & Quanpool Data | QTC123', description: 'View Quanpool QTC pool hashrate, estimated network hashrate, pool share, luck, round effort, active miners, workers, and the 1-hour miner ranking.' },
   },
 } as const;
 

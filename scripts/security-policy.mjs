@@ -1,5 +1,5 @@
 export const RPC_ORIGINS = ['https://rpc1-mainnet.quantus.com','https://rpc2-mainnet.quantus.com'];
-export const POOL_READ_URLS = ['terms','stats/mainnet','luck/mainnet','rounds/mainnet','chains'].map(path => 'https://quanpool.com/api/' + path);
+export const POOL_READ_URLS = ['terms','stats/mainnet','luck/mainnet','rounds/mainnet','miners/mainnet','chains'].map(path => 'https://quanpool.com/api/' + path);
 export const DOCUMENT_CSP = [
  "default-src 'self'", "script-src 'self' 'wasm-unsafe-eval'", "style-src 'self' 'unsafe-inline'",
  "img-src 'self' data:", "font-src 'self'", `connect-src 'self' ${RPC_ORIGINS.join(' ')} ${POOL_READ_URLS.join(' ')} https://sqm.quantus.com/v1/graphql wss://safe.trade/api/v2/websocket/public`,

@@ -4,6 +4,7 @@ import { DIRECTORY_EN } from './directory-en.ts';
 import { WORMHOLE_EN } from './wormhole-en.ts';
 import { WORMHOLE_ERRORS_EN } from './wormhole-errors.ts';
 import { HOLDERS_EN } from './holders-en.ts';
+import { POOL_EN } from './pool-en.ts';
 // Static UI translations; no remote translation service.
 export const EN: Readonly<Record<string,string>> = {
   '白色模式': 'Light mode',
@@ -16,6 +17,7 @@ export const EN: Readonly<Record<string,string>> = {
   ...WORMHOLE_EN,
   ...WORMHOLE_ERRORS_EN,
   ...HOLDERS_EN,
+  ...POOL_EN,
   "提交中": "Submitting",
   "等待入块": "Awaiting inclusion",
   "执行失败，等待确认": "Execution failed · awaiting finality",
