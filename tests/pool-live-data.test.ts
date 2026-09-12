@@ -39,6 +39,15 @@ test('falls back to accepted hourly work when the displayed window is zero', () 
   assert.equal(parsePoolLive(data, NOW, NOW).poolHashrateHs, 21655945462611968 / 3600);
 });
 
+test('keeps live metrics when Quanpool does not report a network miner count', () => {
+  const data = fixtures();
+  (data[0] as { network_miners: number | null }).network_miners = null;
+  const result = parsePoolLive(data, NOW, NOW);
+  assert.equal(result.networkMiners, null);
+  assert.equal(result.poolHashrateHs, 6.3e12);
+  assert.equal(result.poolMiners, 465);
+});
+
 test('rejects unconfirmed, syncing, stale, malformed, or unmasked data', () => {
   const cases: unknown[][] = [];
   for (const mutate of [

@@ -25,7 +25,7 @@ export type PoolLiveSnapshot = {
   height: number;
   blockSeconds: number;
   blockRewardQtc: number;
-  networkMiners: number;
+  networkMiners: number | null;
   poolMiners: number;
   poolWorkers: number;
   blocksFound: number;
@@ -111,7 +111,7 @@ export function parsePoolLive(payloads: unknown[], fetchedAt: number, sourceDate
     poolHashrateHs, networkHashrateHs, poolSharePercent, difficulty,
     height: integer(stats.tip_height, '区块高度异常', 1), blockSeconds,
     blockRewardQtc: planckQtc(terms.block_reward_planck),
-    networkMiners: integer(stats.network_miners, '全网矿工数异常', 0, 10_000_000),
+    networkMiners: stats.network_miners == null ? null : integer(stats.network_miners, '全网矿工数异常', 0, 10_000_000),
     poolMiners: integer(detail.miners_active, '矿池矿工数异常', 0, 10_000_000),
     poolWorkers: integer(detail.workers_total, '矿机数异常', 0, 100_000_000),
     blocksFound: integer(detail.blocks_found, '累计出块异常', 0),
