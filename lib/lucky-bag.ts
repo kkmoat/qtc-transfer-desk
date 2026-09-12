@@ -75,6 +75,9 @@ export function enterLuckyBag(): Promise<LuckyBagState> {
 export async function dismissLuckyBag(reservationId: string, keepalive = false): Promise<void> {
   await post('dismiss', { reservationId }, keepalive);
 }
+export async function releaseLuckyBag(reservationId: string, keepalive = false): Promise<void> {
+  await post('release', { reservationId }, keepalive);
+}
 export async function claimLuckyBag(reservationId: string, address: string, wechat: string): Promise<LuckyBagState> {
   const result = parseLuckyBagState(await post('claim', { reservationId, address, wechat, consent: true }));
   if (result.state !== 'claimed' || !result.claim) throw new Error('CLAIM_NOT_CONFIRMED');

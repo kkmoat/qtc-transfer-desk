@@ -4,7 +4,7 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, Di
 import { DIRECTORY_CATEGORIES } from '@/lib/directory';
 import { useLanguage } from '@/lib/i18n';
 import { addressBytes } from '@/lib/quantus/protocol';
-import { claimLuckyBag, dismissLuckyBag, enterLuckyBag, LuckyBagApiError, type LuckyBagClaim, type LuckyBagState } from '@/lib/lucky-bag';
+import { claimLuckyBag, dismissLuckyBag, enterLuckyBag, LuckyBagApiError, releaseLuckyBag, type LuckyBagClaim, type LuckyBagState } from '@/lib/lucky-bag';
 
 const qr = DIRECTORY_CATEGORIES.flatMap(category => category.links).find(link => link.action === 'wechat')?.href ?? '/images/quantus-wechat.jpg';
 const wallet = 'https://www.quantus.com/wallet/';
@@ -69,17 +69,23 @@ export function LuckyBag({ active }: { active: boolean }) {
   }, []);
   const clearForm = useCallback(() => { setAddress(''); setWechat(''); setConsent(false); setError(''); }, []);
   const updateReservation = useCallback((value: Reservation | null) => { reservationRef.current = value; setReservation(value); }, []);
-  const release = useCallback((keepalive = false) => {
+  const dismiss = useCallback((keepalive = false) => {
     const current = reservationRef.current;
     if (!current) return;
     closedReservations.current.add(current.id); updateReservation(null); clearForm();
     void dismissLuckyBag(current.id, keepalive).catch(() => { /* the fixed server expiry still releases the place */ });
   }, [clearForm, updateReservation]);
+  const relinquish = useCallback((keepalive = false) => {
+    const current = reservationRef.current;
+    if (!current) return;
+    updateReservation(null); clearForm();
+    void releaseLuckyBag(current.id, keepalive).catch(() => { /* fixed expiry remains the final fallback */ });
+  }, [clearForm, updateReservation]);
   const close = useCallback(() => {
     opened.current = false; userClosed.current = true; setOpen(false);
     if (submittingRef.current) releaseAfterClaim.current = true;
-    else release();
-  }, [release]);
+    else dismiss();
+  }, [dismiss]);
   const acceptState = useCallback((result: LuckyBagState) => {
     if (result.state === 'reserved' && result.reservationId && result.expiresAt) {
       if (!activeRef.current || closedReservations.current.has(result.reservationId)) {
@@ -112,7 +118,11 @@ export function LuckyBag({ active }: { active: boolean }) {
       try {
         const result = await enterLuckyBag();
         if (!live) {
-          if ((!mounted.current || !activeRef.current) && result.state === 'reserved' && result.reservationId) void dismissLuckyBag(result.reservationId, true).catch(() => {});
+          if ((!mounted.current || !activeRef.current) && result.state === 'reserved' && result.reservationId) void releaseLuckyBag(result.reservationId, true).catch(() => {});
+          return;
+        }
+        if (document.hidden && result.state === 'reserved' && result.reservationId) {
+          await releaseLuckyBag(result.reservationId, true).catch(() => {});
           return;
         }
         acceptState(result);
@@ -129,10 +139,10 @@ export function LuckyBag({ active }: { active: boolean }) {
     return () => { live = false; clearTimeout(timer); document.removeEventListener('visibilitychange', resume); window.removeEventListener('pageshow', resume); };
   }, [acceptState, active, close]);
   useEffect(() => {
-    const leave = () => { opened.current = false; userClosed.current = true; setOpen(false); release(true); };
+    const leave = () => { opened.current = false; setOpen(false); relinquish(true); };
     window.addEventListener('pagehide', leave);
     return () => window.removeEventListener('pagehide', leave);
-  }, [release]);
+  }, [relinquish]);
   useEffect(() => {
     if (!open || !reservation) return;
     const tick = () => { if (document.visibilityState !== 'hidden') setNow(Date.now()); };
@@ -171,7 +181,7 @@ export function LuckyBag({ active }: { active: boolean }) {
     } finally {
       submittingRef.current = false;
       if (mounted.current) setSubmitting(false);
-      if (releaseAfterClaim.current) { releaseAfterClaim.current = false; release(); }
+      if (releaseAfterClaim.current) { releaseAfterClaim.current = false; dismiss(); }
     }
   }
 
