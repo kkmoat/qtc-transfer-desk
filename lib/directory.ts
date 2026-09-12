@@ -43,6 +43,7 @@ export const DIRECTORY_CATEGORIES: readonly DirectoryCategory[] = [
       { label: '官方文档', href: 'https://docs.quantus.com/' },
       { label: '比特币入门', href: 'https://bitcoin.org/zh_CN/' },
       { label: 'Binance报道', href: 'https://www.binance.com/en/square/post/365438836341829' },
+      { label: 'Bitcoin报道', href: 'https://news.bitcoin.com/security/quantus-targets-2-7-trillion-crypto-risk-with-quantum-safe-mainnet/' },
       { label: 'Finbold报道', href: 'https://finbold.com/quantus-launches-mainnet-with-post-quantum-cryptography-from-block-one-as-quantum-threat-grows/' },
     ],
   },

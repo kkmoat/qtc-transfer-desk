@@ -13,6 +13,7 @@ export const DIRECTORY_EN: Readonly<Record<string, string>> = {
   '持币地址': 'Holder addresses',
   'Quantus白皮书': 'Quantus whitepaper',
   'Binance报道': 'Binance coverage',
+  'Bitcoin报道': 'Bitcoin.com coverage',
   'Finbold报道': 'Finbold coverage',
   '微信交流群': 'WeChat community',
   '官方X': 'Official X',
