@@ -1,7 +1,7 @@
 export type LuckyBagClaim = { id: number; amount: string; status: 'pending' | 'verified' | 'paid' | 'rejected'; submittedAt: number };
 export type LuckyBagCampaign = { id: number; title: string; totalCount: number; totalAmount: string; remainingCount: number; claimedCount: number };
 export type LuckyBagState = {
-  state: 'off' | 'waiting' | 'reserved' | 'claimed' | 'dismissed' | 'expired' | 'finished';
+  state: 'off' | 'available' | 'waiting' | 'reserved' | 'claimed' | 'dismissed' | 'expired' | 'finished';
   campaign: LuckyBagCampaign | null;
   reservationId?: string;
   expiresAt?: number;
@@ -23,7 +23,7 @@ const amount = (value: unknown): value is string => typeof value === 'string' &&
 
 export function parseLuckyBagState(value: unknown): LuckyBagState {
   const row = object(value);
-  if (!row || !['off', 'waiting', 'reserved', 'claimed', 'dismissed', 'expired', 'finished'].includes(String(row.state))) throw new Error('INVALID_RESPONSE');
+  if (!row || !['off', 'available', 'waiting', 'reserved', 'claimed', 'dismissed', 'expired', 'finished'].includes(String(row.state))) throw new Error('INVALID_RESPONSE');
   let campaign: LuckyBagCampaign | null = null;
   if (row.campaign != null) {
     const c = object(row.campaign);
@@ -31,6 +31,7 @@ export function parseLuckyBagState(value: unknown): LuckyBagState {
     campaign = { id: c.id, title: c.title, totalCount: c.totalCount, totalAmount: c.totalAmount, remainingCount: c.remainingCount, claimedCount: c.claimedCount };
   }
   const result: LuckyBagState = { state: row.state as LuckyBagState['state'], campaign };
+  if (row.state === 'available' && !campaign) throw new Error('INVALID_RESPONSE');
   if (row.state === 'reserved') {
     if (!campaign || typeof row.reservationId !== 'string' || !row.reservationId.length || row.reservationId.length > 200 || !integer(row.expiresAt) || row.expiresAt < 1) throw new Error('INVALID_RESPONSE');
     result.reservationId = row.reservationId;
@@ -45,7 +46,7 @@ export function parseLuckyBagState(value: unknown): LuckyBagState {
   return result;
 }
 
-async function post(path: string, body: Record<string, unknown>, keepalive = false): Promise<unknown> {
+async function post(path: string, body: Record<string, unknown>): Promise<unknown> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 12_000);
   try {
@@ -54,7 +55,7 @@ async function post(path: string, body: Record<string, unknown>, keepalive = fal
       // Firefox/WebKit serialize Origin as `null` for mode: same-origin POSTs,
       // while the default mode preserves the real same-origin value.
       method: 'POST', credentials: 'same-origin', cache: 'no-store', redirect: 'error',
-      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal, keepalive,
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal,
     });
     const text = await response.text();
     if (text.length > 20_000) throw new Error('INVALID_RESPONSE');
@@ -68,18 +69,26 @@ async function post(path: string, body: Record<string, unknown>, keepalive = fal
   } finally { clearTimeout(timer); }
 }
 
-// A single in-flight enrollment is shared across React StrictMode effect replay.
+// A single in-flight status request is shared across React StrictMode effect replay.
 // Identity and claim idempotency are enforced by the server's HttpOnly cookie.
 let entering: Promise<LuckyBagState> | null = null;
 export function enterLuckyBag(): Promise<LuckyBagState> {
   if (!entering) entering = post('enter', {}).then(parseLuckyBagState).finally(() => { entering = null; });
   return entering;
 }
-export async function dismissLuckyBag(reservationId: string, keepalive = false): Promise<void> {
-  await post('dismiss', { reservationId }, keepalive);
-}
-export async function releaseLuckyBag(reservationId: string, keepalive = false): Promise<void> {
-  await post('release', { reservationId }, keepalive);
+
+// Sharing one request per campaign makes a rapid double click idempotent even before
+// the server can return the visitor's existing reservation.
+const reserving = new Map<number, Promise<LuckyBagState>>();
+export function reserveLuckyBag(campaignId: number): Promise<LuckyBagState> {
+  if (!Number.isSafeInteger(campaignId) || campaignId < 1) return Promise.reject(new Error('INVALID_CAMPAIGN'));
+  const current = reserving.get(campaignId);
+  if (current) return current;
+  const request = post('reserve', { campaignId }).then(parseLuckyBagState).finally(() => {
+    if (reserving.get(campaignId) === request) reserving.delete(campaignId);
+  });
+  reserving.set(campaignId, request);
+  return request;
 }
 export async function claimLuckyBag(reservationId: string, address: string, wechat: string): Promise<LuckyBagState> {
   const result = parseLuckyBagState(await post('claim', { reservationId, address, wechat, consent: true }));
