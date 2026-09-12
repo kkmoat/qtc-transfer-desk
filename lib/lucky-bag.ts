@@ -50,7 +50,10 @@ async function post(path: string, body: Record<string, unknown>, keepalive = fal
   const timer = setTimeout(() => controller.abort(), 12_000);
   try {
     const response = await fetch('/api/lucky-bag/' + path, {
-      method: 'POST', credentials: 'same-origin', mode: 'same-origin', cache: 'no-store', redirect: 'error',
+      // Keep Fetch's default CORS mode. With Referrer-Policy: no-referrer,
+      // Firefox/WebKit serialize Origin as `null` for mode: same-origin POSTs,
+      // while the default mode preserves the real same-origin value.
+      method: 'POST', credentials: 'same-origin', cache: 'no-store', redirect: 'error',
       headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal, keepalive,
     });
     const text = await response.text();
