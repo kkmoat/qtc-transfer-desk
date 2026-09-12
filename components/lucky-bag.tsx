@@ -14,7 +14,7 @@ type Reservation = { id: string; expiresAt: number; campaignId: number };
 const TEXT = {
   zh: {
     title: 'Quantus 幸运福袋', formTitle: '领取你的 QTC 福袋', receiptTitle: 'QTC 领奖凭证',
-    invitation: '你因为打开 qtc123 导航栏，从而被 Quantus（QTC）礼包砸中啦！',
+    invitation: '天啦噜！因为访问 qtc123 ，你被 Quantus(QTC) 礼包砸中啦！',
     open: '打开福袋', opening: '正在打开…', close: '关闭福袋', continueClaim: '继续领取福袋',
     remaining: '剩余', expired: '预留已到期。', soldOut: '手慢啦，福袋已被抢完！', soldOutButton: '福袋已抢完',
     scan: '扫码添加 kk 微信', qrAlt: '添加 kk 微信的二维码',
