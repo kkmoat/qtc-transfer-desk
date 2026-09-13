@@ -50,6 +50,7 @@ export function LuckyBag({ active }: { active: boolean }) {
   const [open, setOpen] = useState(false);
   const [stage, setStage] = useState<'gift' | 'form'>('gift');
   const [offer, setOffer] = useState<LuckyBagCampaign | null>(null);
+  const [campaignTitle, setCampaignTitle] = useState('');
   const [reservation, setReservation] = useState<Reservation | null>(null);
   const [claim, setClaim] = useState<LuckyBagClaim | null>(null);
   const [address, setAddress] = useState(''), [wechat, setWechat] = useState('');
@@ -68,7 +69,10 @@ export function LuckyBag({ active }: { active: boolean }) {
     userClosed.current = false; opened.current = true; setOpen(true);
   }, []);
   const clearForm = useCallback(() => { setAddress(''); setWechat(''); setConsent(false); setError(''); }, []);
-  const updateOffer = useCallback((value: LuckyBagCampaign | null) => { offerRef.current = value; setOffer(value); }, []);
+  const updateOffer = useCallback((value: LuckyBagCampaign | null) => {
+    if (value) setCampaignTitle(value.title);
+    offerRef.current = value; setOffer(value);
+  }, []);
   const updateReservation = useCallback((value: Reservation | null) => { reservationRef.current = value; setReservation(value); }, []);
   const close = useCallback(() => {
     opened.current = false; userClosed.current = true; setOpen(false);
@@ -221,7 +225,7 @@ export function LuckyBag({ active }: { active: boolean }) {
         <DialogClose asChild><button type="button" className="lucky-bag-close" aria-label={text.close} title={text.close}><X size={20} aria-hidden="true"/></button></DialogClose>
         <DialogHeader className="lucky-bag-header">
           <p className="lucky-bag-kicker"><Sparkles size={14} aria-hidden="true"/> QUANTUS · QTC</p>
-          <DialogTitle>{claim ? text.receiptTitle : stage === 'gift' ? text.title : text.formTitle}</DialogTitle>
+          <DialogTitle>{claim ? text.receiptTitle : stage === 'gift' ? campaignTitle || text.title : text.formTitle}</DialogTitle>
           <DialogDescription className="lucky-bag-a11y-description">{claim ? text.receiptTitle : stage === 'gift' ? text.invitation : text.formTitle}</DialogDescription>
         </DialogHeader>
         {claim ? <div className="lucky-bag-receipt" role="status">
