@@ -24,9 +24,11 @@ html[data-theme=light]{
 html[data-theme=light] ::selection{background:#ffdcc7;color:#3d291e}
 
 /* Shared surfaces, divider lines and form fields. */
-html[data-theme=light] :is(.transfer-panel,.history-panel,.mining-card,.encrypted-card,.encrypted-withdrawal,.intro-feature,.intro-resources,.overview-market-card,.directory-table,.wallet-dialog,.review-dialog,.wechat-qr-dialog,[data-slot=select-content]){background:#fff;border-color:var(--border);color:var(--foreground)}
+html[data-theme=light] :is(.transfer-panel,.history-panel,.mining-card,.encrypted-card,.encrypted-withdrawal,.intro-feature,.intro-resources,.overview-market-card,.overview-holder-notes a,.directory-table,.wallet-dialog,.review-dialog,.wechat-qr-dialog,[data-slot=select-content]){background:#fff;border-color:var(--border);color:var(--foreground)}
 html[data-theme=light] :is(.account-panel,.overview-card){background:linear-gradient(140deg,#fff,#f2f6fb);border-color:var(--border)}
 html[data-theme=light] .overview-card.overview-circulating{background:linear-gradient(140deg,#fff4e9,#fff);border-color:var(--light-warm-border)}
+html[data-theme=light] .overview-card.overview-adjusted{background:linear-gradient(140deg,#eef9f4,#fff);border-color:#add5c4}
+html[data-theme=light] .overview-holder-notes a span{color:var(--light-muted)}html[data-theme=light] .overview-holder-notes strong{color:var(--light-orange)}
 html[data-theme=light] :is(.topbar,.desk-navigation,.privacy-note,.node-select,.fee-row,.history-row,.directory-category+.directory-category,.directory-row h2,.intro-facts,.encrypted-stats,.encrypted-addresses li,.withdraw-inputs,.withdraw-input,.withdraw-history-row,.mining-total,.mining-price,.mining-result-stats,.mining-result-stats .mining-profit,.mining-periods,.mining-assumption,.mining-method){border-color:var(--border)}
 html[data-theme=light] .step-line{background:var(--border)}
 html[data-theme=light] .step b{border-color:#a9b6c6}

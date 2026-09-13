@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpRight, RefreshCw, UsersRound } from 'lucide-react';
 import { t, useLanguage, locale } from '@/lib/i18n';
-import { fetchHoldersPage, formatPlanckQtc, HOLDERS_EXPLORER_URL, HOLDERS_PAGE_SIZE, type HoldersSnapshot } from '@/lib/holders';
+import { fetchHoldersPage, formatPlanckQtc, HOLDERS_EXPLORER_URL, HOLDERS_PAGE_SIZE, knownHolderRole, type HoldersSnapshot, type KnownHolderRole } from '@/lib/holders';
 
 const explorerAccount = (address: string) => 'https://explorer.quantus.com/accounts/' + encodeURIComponent(address);
 const when = (value: number) => new Date(value).toLocaleString(locale(), { hour12: false });
+const roleLabel = (role: KnownHolderRole) => role === 'project' ? t('项目方锁仓 · 非流通') : role === 'quanpool' ? t('Quanpool 矿池 · 多名矿工') : t('CEX · 多名用户');
 
 export function QtcHolders({ active }: { active: boolean }) {
   useLanguage();
@@ -63,7 +64,7 @@ export function QtcHolders({ active }: { active: boolean }) {
         <thead><tr><th scope="col">{t('排名')}</th><th scope="col">{t('地址')}</th><th scope="col">{t('可用余额')}</th><th scope="col">{t('冻结')}</th><th scope="col">{t('预留')}</th></tr></thead>
         <tbody>{current?.accounts.map((account, index) => <tr key={account.address}>
           <td className="holders-rank">#{firstRank + index}</td>
-          <td><a className="holders-address" href={explorerAccount(account.address)} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" aria-label={t('在官方区块浏览器打开地址 {0}', account.address)}>{account.address}<ArrowUpRight size={13} aria-hidden="true" /></a></td>
+          <td><div className="holders-address-cell"><a className="holders-address" href={explorerAccount(account.address)} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" aria-label={t('在官方区块浏览器打开地址 {0}', account.address)}>{account.address}<ArrowUpRight size={13} aria-hidden="true" /></a>{knownHolderRole(account.address)&&<span className={'holders-role holders-role-'+knownHolderRole(account.address)}>{roleLabel(knownHolderRole(account.address)!)}</span>}</div></td>
           <td className="holders-amount"><strong>{formatPlanckQtc(account.free, locale())}</strong> <small>QTC</small></td>
           <td className="holders-amount">{formatPlanckQtc(account.frozen, locale())} <small>QTC</small></td>
           <td className="holders-amount">{formatPlanckQtc(account.reserved, locale())} <small>QTC</small></td>

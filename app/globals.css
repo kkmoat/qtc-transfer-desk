@@ -51,6 +51,8 @@ html[lang="en"] .network{margin-right:12px}
 @media(max-width:900px){.overview-supply-grid{grid-template-columns:1fr}.overview-value small{display:inline;margin-left:5px}.overview-card{padding:20px 23px}.overview-card .overview-help{margin:7px 0}.overview-card .overview-foot{margin-top:7px}}@media(max-width:600px){.overview-market-card{padding:22px 18px}.overview-market-heading{flex-wrap:wrap}.overview-market-body{grid-template-columns:1fr;gap:24px}.overview-price{font-size:39px}.overview-market-footer{flex-direction:column;align-items:start}.overview-toolbar{align-items:start}.overview-toolbar>span{padding-top:10px}.overview-value{font-size:28px}}
 
 .overview-valuation-grid .overview-value{font-size:clamp(23px,2.3vw,29px)}.overview-card.overview-circulating{border-color:#79513c;background:linear-gradient(140deg,#2b251f,#151d27)}
+.overview-adjusted-grid{margin-top:2px}.overview-card.overview-adjusted{border-color:#356554;background:linear-gradient(140deg,#172b27,#111b24)}.overview-holder-notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.overview-holder-notes a{position:relative;display:grid;gap:7px;min-width:0;padding:16px 42px 16px 17px;border:1px solid #2d3c4d;border-radius:12px;background:#101923;color:#a7b7c8;font-size:12px;line-height:1.7}.overview-holder-notes a:hover{border-color:#b76f4e;background:#15202b}.overview-holder-notes strong{color:#f0b18c;font-size:13px;font-weight:600}.overview-holder-notes span{overflow-wrap:anywhere}.overview-holder-notes svg{position:absolute;right:16px;top:18px;color:#879bb1}
+@media(max-width:900px){.overview-holder-notes{grid-template-columns:1fr}}
 
 /* Community and creator links keep their reading order on narrow screens. */
 .heading-links{max-width:100%}
