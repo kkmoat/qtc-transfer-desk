@@ -29,8 +29,8 @@ for (const view of VIEWS) {
   assert(html.includes('<img class="brand-logo" src="/images/qtc123-logo.png" width="180" height="180" alt="QTC123 Quantus"'));
   const footer = html.match(/<footer>[\s\S]*?<\/footer>/)?.[0];
   assert(footer, 'Expected one footer');
-  assert.equal([...footer.matchAll(/href="https:\/\/x\.com\/QuantusCN"/g)].length, 1, 'Expected one footer contact link');
-  assert(footer.includes('<a href="https://x.com/QuantusCN" target="_blank" rel="noopener noreferrer">联系我们'));
+  assert.equal([...footer.matchAll(/href="https:\/\/x\.com\/QTC123_COM"/g)].length, 1, 'Expected one footer contact link');
+  assert(footer.includes('<a href="https://x.com/QTC123_COM" target="_blank" rel="noopener noreferrer">联系我们'));
   assert(!footer.includes('kk129182'));
   assert(!footer.includes('contact-button'));
   assert(!footer.includes('contact-status'));
