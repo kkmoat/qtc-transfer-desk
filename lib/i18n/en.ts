@@ -316,7 +316,7 @@ export const EN: Readonly<Record<string,string>> = {
   "推广": "Sponsored",
   "通过作者邀请链接注册": "Register with the creator's referral link",
   "邀请码": "Referral code ",
-  "跳转至 www.bi86.com": "Opens www.bi86.com",
+  "免翻墙网址注册币安": "Register on Binance without a VPN",
   "打开注册链接": "Open registration link",
   "转账金额超出有效范围。": "The transfer amount is outside the valid range.",
   "金额与服务费合计超出链上范围。": "The amount plus service fee exceeds the on-chain limit.",
