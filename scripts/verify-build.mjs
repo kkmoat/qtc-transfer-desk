@@ -40,6 +40,8 @@ for (const view of VIEWS) {
   assert(!html.includes('href="#'), 'Internal view links must use paths');
   if (view === 'directory') {
     assert(!html.includes('>微信交流群<'), 'WeChat community directory item must be removed');
+    assert(!html.includes('>作者X<'), 'Creator X directory item must be removed');
+    assert(!html.includes('href="https://x.com/kkmoat"'), 'Creator X destination must be removed from the directory');
     assert(!html.includes('class="directory-qr-trigger"'), 'Removed WeChat item must not retain a QR trigger');
   }
 }

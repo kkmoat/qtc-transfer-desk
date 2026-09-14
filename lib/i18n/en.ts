@@ -60,8 +60,6 @@ export const EN: Readonly<Record<string,string>> = {
   "算清每一枚 QTC 的成本": "Know your cost per QTC",
   "QTC 主网转账": "QTC Mainnet Transfer",
   "配置你的设备，看看当前算力下的产量、成本与盈亏。": "Configure your hardware to estimate output, costs, and profit at the current hash rate.",
-  "作者 X：@kkmoat，在新标签页打开": "Creator on X: @kkmoat (opens in a new tab)",
-  "作者 X：": "Creator on X: ",
   "本地计算 · 无需钱包": "Local calculation · no wallet needed",
   "本地签名": "Local signing",
   "已打开付款钱包": "Sender wallet unlocked",
