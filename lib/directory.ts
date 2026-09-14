@@ -49,7 +49,7 @@ export const DIRECTORY_CATEGORIES: readonly DirectoryCategory[] = [
   },
   {
     id: 'community', title: '社区', links: [
-      { label: '中文交流群', href: 'https://t.me/QuantusCN' },
+      { label: '中文交流群', href: 'https://t.me/QTC123COM' },
       { label: '官方X', href: 'https://x.com/QuantusNetwork' },
       { label: '官方Telegram', href: 'https://t.me/quantusnetwork' },
       { label: 'Quantus研究论坛', href: 'https://research.quantus.com/' },

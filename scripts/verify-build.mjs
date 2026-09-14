@@ -28,6 +28,8 @@ for (const view of VIEWS) {
   assert.equal([...html.matchAll(/class="brand-logo"/g)].length, 1, 'Expected one navigation logo');
   assert(html.includes('<img class="brand-logo" src="/images/qtc123-logo.png" width="180" height="180" alt="QTC123 Quantus"'));
   assert(!html.includes('class="author-link"'), 'Header author X link must be removed');
+  assert.equal([...html.matchAll(/href="https:\/\/t\.me\/QTC123COM"/g)].length, view === 'directory' ? 2 : 1, 'Expected the current Chinese Telegram destination');
+  assert(!html.includes('https://t.me/QuantusCN'), 'Legacy Chinese Telegram destination must be removed');
   const footer = html.match(/<footer>[\s\S]*?<\/footer>/)?.[0];
   assert(footer, 'Expected one footer');
   assert.equal([...footer.matchAll(/href="https:\/\/x\.com\/QTC123_COM"/g)].length, 1, 'Expected one footer contact link');
