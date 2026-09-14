@@ -27,6 +27,7 @@ for (const view of VIEWS) {
   assert(html.includes('<link rel="apple-touch-icon" href="/images/qtc123-logo.png" sizes="180x180"'));
   assert.equal([...html.matchAll(/class="brand-logo"/g)].length, 1, 'Expected one navigation logo');
   assert(html.includes('<img class="brand-logo" src="/images/qtc123-logo.png" width="180" height="180" alt="QTC123 Quantus"'));
+  assert(!html.includes('class="author-link"'), 'Header author X link must be removed');
   const footer = html.match(/<footer>[\s\S]*?<\/footer>/)?.[0];
   assert(footer, 'Expected one footer');
   assert.equal([...footer.matchAll(/href="https:\/\/x\.com\/QTC123_COM"/g)].length, 1, 'Expected one footer contact link');
@@ -37,6 +38,10 @@ for (const view of VIEWS) {
   assert(html.includes('itemType="https://schema.org/WebSite"') || html.includes('itemtype="https://schema.org/WebSite"'));
   for (const route of VIEWS) assert(html.includes('href="' + viewPath(route) + '"'), 'Missing crawlable internal route');
   assert(!html.includes('href="#'), 'Internal view links must use paths');
+  if (view === 'directory') {
+    assert(!html.includes('>微信交流群<'), 'WeChat community directory item must be removed');
+    assert(!html.includes('class="directory-qr-trigger"'), 'Removed WeChat item must not retain a QR trigger');
+  }
 }
 const sitemap = await readFile('dist/sitemap.xml', 'utf8');
 assert.equal([...sitemap.matchAll(/<loc>/g)].length, VIEWS.length);

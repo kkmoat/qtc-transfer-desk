@@ -1,4 +1,4 @@
-export type DirectoryLink = { label: string; href: string; sponsored?: boolean; action?: 'wechat' };
+export type DirectoryLink = { label: string; href: string; sponsored?: boolean };
 export type DirectoryCategory = { id: string; title: string; links: readonly DirectoryLink[] };
 
 const OTC_ORDERS_URL = 'https://docs.google.com/spreadsheets/d/1o7pVtQ-YKB0HHFsvPjXqkae1F0yCP4FxaxbNgBkkfU8/edit?usp=sharing';
@@ -50,7 +50,6 @@ export const DIRECTORY_CATEGORIES: readonly DirectoryCategory[] = [
   {
     id: 'community', title: '社区', links: [
       { label: '中文交流群', href: 'https://t.me/QuantusCN' },
-      { label: '微信交流群', href: '/images/quantus-wechat.jpg', action: 'wechat' },
       { label: '官方X', href: 'https://x.com/QuantusNetwork' },
       { label: '官方Telegram', href: 'https://t.me/quantusnetwork' },
       { label: '作者X', href: 'https://x.com/kkmoat' },

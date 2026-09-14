@@ -1,20 +1,8 @@
 import { ArrowUpRight } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DIRECTORY_CATEGORIES, type DirectoryLink } from '@/lib/directory';
 import { t, useLanguage } from '@/lib/i18n';
 
 function DirectoryItem({ link }: { link: DirectoryLink }) {
-  if (link.action === 'wechat') return <li><Dialog>
-    <DialogTrigger asChild><button type="button" className="directory-qr-trigger">{t(link.label)}</button></DialogTrigger>
-    <DialogContent className="wechat-qr-dialog">
-      <DialogHeader>
-        <DialogTitle>{t('微信交流群')}</DialogTitle>
-        <DialogDescription>{t('使用微信扫一扫，联系作者加入交流群。')}</DialogDescription>
-      </DialogHeader>
-      <img className="wechat-qr-image" src={link.href} width={1194} height={1575} alt={t('微信联系二维码（kkmoat）')}/>
-      <a className="wechat-qr-original" href={link.href} target="_blank" rel="noopener noreferrer">{t('查看二维码原图')}<ArrowUpRight size={16} aria-hidden="true"/></a>
-    </DialogContent>
-  </Dialog></li>;
   const external = link.href.startsWith('https://');
   return <li><a href={link.href}
     target={external ? '_blank' : undefined}
