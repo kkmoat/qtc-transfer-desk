@@ -23,6 +23,10 @@ for (const view of VIEWS) {
   assert(html.includes('<title>' + pageMetadata(view).title + '</title>'));
   assert.equal([...html.matchAll(/rel="canonical"/g)].length, 1);
   assert(html.includes('<link rel="canonical" href="' + canonicalUrl(view) + '"'));
+  assert(html.includes('<link rel="icon" href="/favicon.png" type="image/png" sizes="64x64"'));
+  assert(html.includes('<link rel="apple-touch-icon" href="/images/qtc123-logo.png" sizes="180x180"'));
+  assert.equal([...html.matchAll(/class="brand-logo"/g)].length, 1, 'Expected one navigation logo');
+  assert(html.includes('<img class="brand-logo" src="/images/qtc123-logo.png" width="180" height="180" alt="QTC123 Quantus"'));
   assert(html.includes('itemType="https://schema.org/WebSite"') || html.includes('itemtype="https://schema.org/WebSite"'));
   for (const route of VIEWS) assert(html.includes('href="' + viewPath(route) + '"'), 'Missing crawlable internal route');
   assert(!html.includes('href="#'), 'Internal view links must use paths');
@@ -31,6 +35,17 @@ const sitemap = await readFile('dist/sitemap.xml', 'utf8');
 assert.equal([...sitemap.matchAll(/<loc>/g)].length, VIEWS.length);
 for (const view of VIEWS) assert(sitemap.includes('<loc>' + canonicalUrl(view) + '</loc>'));
 assert(!sitemap.includes('#'));
+const pngSignature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+function pngSize(data) {
+  assert(data.subarray(0, 8).equals(pngSignature), 'Logo asset must be PNG');
+  return { width: data.readUInt32BE(16), height: data.readUInt32BE(20) };
+}
+const favicon = await readFile('dist/favicon.png');
+const navigationLogo = await readFile('dist/images/qtc123-logo.png');
+assert.deepEqual(pngSize(favicon), { width: 64, height: 64 });
+assert.deepEqual(pngSize(navigationLogo), { width: 180, height: 180 });
+assert(favicon.length < 20 * 1024, 'Favicon is unexpectedly large');
+assert(navigationLogo.length < 100 * 1024, 'Navigation logo is unexpectedly large');
 assert((await readFile('dist/robots.txt', 'utf8')).includes('Sitemap: https://www.qtc123.com/sitemap.xml'));
 assert(!DOCUMENT_CSP.includes("script-src 'self' 'unsafe-inline'"));
 assert(!DOCUMENT_CSP.includes("'unsafe-eval'"));
