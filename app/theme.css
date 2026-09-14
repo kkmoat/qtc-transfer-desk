@@ -81,7 +81,6 @@ html[data-theme=light] :is(.fee-line,.fee-recipient,.history-notice strong,.over
 html[data-theme=light] .history-badge.confirmed{background:#edf8f1;border-color:#a9d0b7;color:#226b46}
 html[data-theme=light] :is(.result-state.success,.overview-up,.mining-results .positive){color:#157348}
 html[data-theme=light] :is(.overview-down,.mining-results .negative,.mining-validation){color:#b0342b}
-html[data-theme=light] .contact-status{color:#28516c}
 html[data-theme=light] .overview-data-note{border-color:#9bbaca}
 html[data-theme=light] .intro-hero{background:radial-gradient(ellipse at top left,#fff0e2 0,transparent 65%),#fff;border-color:var(--light-warm-border)}
 html[data-theme=light] .mining-result-card{background:linear-gradient(145deg,#fff2e3,#fff 70%);border-color:var(--light-warm-border)}

@@ -43,11 +43,15 @@ test('runtime protocol errors and parameterized data errors translate without re
 });
 
 test('stored English dynamic messages switch back to Chinese without losing parameters', () => {
-  for (const text of ['已复制微信号：kk129182', '节点暂不可用（503）。']) {
-    const english = translate(text, 'en');
-    noChinese(english);
-    assert.equal(translate(english, 'zh'), text);
-  }
+  const text = '节点暂不可用（503）。';
+  const english = translate(text, 'en');
+  noChinese(english);
+  assert.equal(translate(english, 'zh'), text);
+});
+
+test('footer contact label is available in Chinese and English', () => {
+  assert.equal(translate('联系我们', 'zh'), '联系我们');
+  assert.equal(translate('联系我们', 'en'), 'Contact us');
 });
 
 test('placeholders preserve punctuation, quantities and repeated rendering without changing user inputs', () => {

@@ -27,6 +27,13 @@ for (const view of VIEWS) {
   assert(html.includes('<link rel="apple-touch-icon" href="/images/qtc123-logo.png" sizes="180x180"'));
   assert.equal([...html.matchAll(/class="brand-logo"/g)].length, 1, 'Expected one navigation logo');
   assert(html.includes('<img class="brand-logo" src="/images/qtc123-logo.png" width="180" height="180" alt="QTC123 Quantus"'));
+  const footer = html.match(/<footer>[\s\S]*?<\/footer>/)?.[0];
+  assert(footer, 'Expected one footer');
+  assert.equal([...footer.matchAll(/href="https:\/\/x\.com\/QuantusCN"/g)].length, 1, 'Expected one footer contact link');
+  assert(footer.includes('<a href="https://x.com/QuantusCN" target="_blank" rel="noopener noreferrer">联系我们'));
+  assert(!footer.includes('kk129182'));
+  assert(!footer.includes('contact-button'));
+  assert(!footer.includes('contact-status'));
   assert(html.includes('itemType="https://schema.org/WebSite"') || html.includes('itemtype="https://schema.org/WebSite"'));
   for (const route of VIEWS) assert(html.includes('href="' + viewPath(route) + '"'), 'Missing crawlable internal route');
   assert(!html.includes('href="#'), 'Internal view links must use paths');

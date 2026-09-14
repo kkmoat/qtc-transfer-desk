@@ -30,7 +30,6 @@ import { LocalSigner, type OpenWallet } from '@/lib/quantus/signer';
 import {readHistory,saveHistory,mergeHistory,HISTORY_PREFIX,type TransferReceipt} from '@/lib/quantus/records';
 import { readPending, savePending, submitOnce, trackTransfer, PENDING_KEY, type TransferRecord } from '@/lib/quantus/tracking';
 
-const CONTACT_WECHAT='kk129182';
 const complete = (r:TransferRecord|null)=>!!r&&['finalized','failed','expired'].includes(r.phase);
 const receiptStatus=(r:TransferReceipt)=>({submitting:t("提交中"),submitted:t("等待入块"),included:r.execution==='failed'?t("执行失败，等待确认"):t("已入块，等待确认"),finalized:t("已最终确认"),failed:t("未成功"),unknown:t("待查询"),expired:t("已过期")})[r.phase];
 const historyDate=(time:number)=>new Date(time).toLocaleString(locale(),{hour12:false});
@@ -54,7 +53,6 @@ export default function Home({initialView='directory'}:{initialView?:DeskView}={
  const [prepared,setPrepared]=useState<Prepared|null>(null);const [ack,setAck]=useState(false);
  const [record,setRecord]=useState<TransferRecord|null>(null);const [tracking,setTracking]=useState(false);
  const [runtime,setRuntime]=useState<number|null>(null);const [copied,setCopied]=useState('');
- const [contactMessage,setContactMessage]=useState('');
  const [history,setHistory]=useState<TransferReceipt[]>([]);const [historyLimit,setHistoryLimit]=useState(10);
  const [historyWarning,setHistoryWarning]=useState('');const [historyDetailHash,setHistoryDetailHash]=useState<string|null>(null);
  const [historyTracking,setHistoryTracking]=useState<string|null>(null);const [historyError,setHistoryError]=useState('');
@@ -121,10 +119,6 @@ export default function Home({initialView='directory'}:{initialView?:DeskView}={
   finally{if(historyTracker.current===controller){historyTracker.current=null;setHistoryTracking(null);}}
  }
  const closeHistory=()=>{historyTracker.current?.abort();historyTracker.current=null;setHistoryTracking(null);setHistoryDetailHash(null);setHistoryError('');};
- async function copyContact(){
-  try{await navigator.clipboard.writeText(CONTACT_WECHAT);setContactMessage(t("已复制微信号：{0}", CONTACT_WECHAT));}
-  catch{setContactMessage(t("无法自动复制，请手动复制微信号：{0}", CONTACT_WECHAT));}
- }
  async function copy(value:string){try{await navigator.clipboard.writeText(value);setCopied(value);setTimeout(()=>setCopied(''),1800);}catch{setError(t("无法自动复制，请手动选中复制。"));}}
  const closeModal=(open:boolean)=>{if(!open&&!busy){if(phraseInput.current)phraseInput.current.value='';setModal(null);setError('');}};
  const resetTransaction=()=>{if(!complete(record)||tracking)return;sessionStorage.removeItem(PENDING_KEY);setRecord(null);setPrepared(null);setRecipient('');setAmount('');setError('');};
@@ -187,7 +181,7 @@ export default function Home({initialView='directory'}:{initialView?:DeskView}={
  {renderView('mining')&&<div className="desk-view" hidden={view!=='mining'}><MiningCalculator active={view==='mining'}/></div>}
  {renderView('holders')&&<div className="desk-view" hidden={view!=='holders'}><QtcHolders active={view==='holders'}/></div>}
  {renderView('pool')&&<div className="desk-view" hidden={view!=='pool'}><PoolHashrate active={view==='pool'}/></div>}
- <footer><span>{t("独立社区工具")}</span><div className="footer-links"><a href="https://github.com/kkmoat/qtc-transfer-desk" target="_blank" rel="noopener noreferrer">{t("GitHub 开源")}</a><a href="/source/quantus-browser-crypto-source.zip" download>{t("签名组件源码")}</a><a href="/source/LICENSE.txt" target="_blank">GPL-3.0</a><div className="footer-contact"><button type="button" className="contact-button" onClick={copyContact} aria-label={t("联系我们，复制微信号 {0}", CONTACT_WECHAT)} title={t("点击复制微信号：{0}", CONTACT_WECHAT)}>{t("联系我们")}<Copy size={14} aria-hidden="true"/></button><span className="contact-status" role="status" aria-live="polite">{t(contactMessage)}</span></div></div></footer></main>
+ <footer><span>{t("独立社区工具")}</span><div className="footer-links"><a href="https://github.com/kkmoat/qtc-transfer-desk" target="_blank" rel="noopener noreferrer">{t("GitHub 开源")}</a><a href="/source/quantus-browser-crypto-source.zip" download>{t("签名组件源码")}</a><a href="/source/LICENSE.txt" target="_blank">GPL-3.0</a><a href="https://x.com/QuantusCN" target="_blank" rel="noopener noreferrer">{t("联系我们")}<ArrowUpRight size={14} aria-hidden="true"/></a></div></footer></main>
  <LuckyBag active/>
  <Dialog open={historyDetailHash!==null} onOpenChange={open=>{if(!open)closeHistory();}}><DialogContent className="wallet-dialog history-dialog"><DialogHeader><DialogTitle>{t("转账记录详情")}</DialogTitle><DialogDescription>{t("这是本地保存的交易信息。重新查询只核对链上结果，不会再次付款。")}</DialogDescription></DialogHeader>
  {historyDetail?<><div className="receipt-amount">{formatAmount(BigInt(historyDetail.amount))} <span>QTC</span></div><p className="history-detail-state" role="status">{historyTracking===historyDetail.hash?t("正在查询链上结果…"):t("上次查询结果：{0}", receiptStatus(historyDetail))}</p><p className="micro">{t(historyDetail.message)}</p>
