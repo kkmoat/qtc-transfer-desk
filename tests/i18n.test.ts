@@ -54,6 +54,14 @@ test('footer contact label is available in Chinese and English', () => {
   assert.equal(translate('联系我们', 'en'), 'Contact us');
 });
 
+test('Binance referral subtitle shows the VPN-free domain in both languages', () => {
+  const chinese = '免翻墙网址：www.bi86.com';
+  const english = 'VPN-free URL: www.bi86.com';
+  assert.equal(translate(chinese, 'zh'), chinese);
+  assert.equal(translate(chinese, 'en'), english);
+  assert.equal(translate(english, 'zh'), chinese);
+});
+
 test('placeholders preserve punctuation, quantities and repeated rendering without changing user inputs', () => {
   assert.equal(translate('移除设备 {0}', 'en', [0]), 'Remove device 0');
   assert.equal(translate('移除设备 {0}', 'zh', [21]), '移除设备 21');

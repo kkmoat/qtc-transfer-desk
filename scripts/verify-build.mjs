@@ -28,6 +28,9 @@ for (const view of VIEWS) {
   assert.equal([...html.matchAll(/class="brand-logo"/g)].length, 1, 'Expected one navigation logo');
   assert(html.includes('<img class="brand-logo" src="/images/qtc123-logo.png" width="180" height="180" alt="QTC123 Quantus"'));
   assert(!html.includes('class="author-link"'), 'Header author X link must be removed');
+  assert(html.includes('免翻墙网址：www.bi86.com'), 'Expected the current Binance VPN-free URL subtitle');
+  assert(!html.includes('免翻墙网址注册币安'), 'Legacy Binance subtitle must be removed');
+  assert(html.includes('href="https://www.bi86.com/go/8.html"'), 'Binance referral destination must remain unchanged');
   assert.equal([...html.matchAll(/href="https:\/\/t\.me\/QTC123COM"/g)].length, view === 'directory' ? 2 : 1, 'Expected the current Chinese Telegram destination');
   assert(!html.includes('https://t.me/QuantusCN'), 'Legacy Chinese Telegram destination must be removed');
   const footer = html.match(/<footer>[\s\S]*?<\/footer>/)?.[0];
