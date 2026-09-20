@@ -1,5 +1,6 @@
 import { blake2AsHex, blake2AsU8a, encodeAddress, xxhashAsHex } from '@polkadot/util-crypto';
 import type { EventRecord } from '@polkadot/types/interfaces';
+import { MAX_ACCOUNT_INDEX } from '../quantus/account-index.ts';
 import { GENESIS, RPC_URLS, addressBytes, accountKey, compact, concat, decodeAccount, fromLittle, hex, little, readCompact, same, storagePrefix, unhex, validateMetadata } from '../quantus/protocol.ts';
 import type { WormholeBalanceSnapshot, WormholeNullifierInput, WormholeUtxo } from './data.ts';
 
@@ -151,7 +152,7 @@ export function parseWormholeWithdrawalReceipt(value: unknown): WormholeWithdraw
   try {
     const r = obj(value);
     if (r.version !== 1 || r.kind !== 'wormhole-withdrawal' || typeof r.selfAddress !== 'string' || typeof r.phase !== 'string' || !phases.has(r.phase) || typeof r.message !== 'string' || r.message.length > 1000 || !RPC_URLS.includes(r.endpoint as typeof RPC_URLS[number])) return null;
-    addressBytes(r.selfAddress); hash32(r.hash); hash32(r.proofBlockHash); uint(r.normalAccountIndex, 999999); uint(r.proofBlock); uint(r.firstBlock); uint(r.expiresAt); uint(r.createdAt, Number.MAX_SAFE_INTEGER);
+    addressBytes(r.selfAddress); hash32(r.hash); hash32(r.proofBlockHash); uint(r.normalAccountIndex, MAX_ACCOUNT_INDEX); uint(r.proofBlock); uint(r.firstBlock); uint(r.expiresAt); uint(r.createdAt, Number.MAX_SAFE_INTEGER);
     if (r.proofBlock === 0 || (r.expiresAt as number) !== (r.proofBlock as number) + 4097 || (r.firstBlock as number) < (r.proofBlock as number) || (r.firstBlock as number) > (r.expiresAt as number)) return null;
     const input = amount(r.inputPlanck); const net = amount(r.netToSelfPlanck); const fee = amount(r.volumeFeePlanck); const dust = amount(r.quantumDustPlanck);
     if (input <= 0n || net <= 0n || net % WORMHOLE_QUANTUM || fee % WORMHOLE_QUANTUM || input !== net + fee + dust || dust >= 7n * WORMHOLE_QUANTUM) return null;
@@ -256,7 +257,7 @@ function assertChecked(prepared: Pick<PreparedWormholeWithdrawal, 'selection' | 
 }
 export async function prepareWormholeWithdrawal(options: PrepareWormholeWithdrawalOptions): Promise<PreparedWormholeWithdrawal> {
   const { snapshot, selfAddress, normalAccountIndex, signal } = options;
-  checkAbort(signal); addressBytes(selfAddress); uint(normalAccountIndex, 999999);
+  checkAbort(signal); addressBytes(selfAddress); uint(normalAccountIndex, MAX_ACCOUNT_INDEX);
   if (!snapshot || snapshot.snapshot?.genesis !== GENESIS || snapshot.snapshot.finality !== 'finalized' || snapshot.scope !== 'gap-limit-20') throw new Error('Complete a verified finalized encrypted balance scan first.');
   const summary = summarizeWormholeSelection(snapshot.utxos, options.selectedIds);
   const leaves = new Set<string>();

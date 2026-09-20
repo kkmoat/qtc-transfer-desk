@@ -28,7 +28,7 @@ export const EN: Readonly<Record<string,string>> = {
   "已过期": "Expired",
   "操作未完成，请重试。": "The operation did not complete. Please try again.",
   "长时间未操作，钱包已自动锁定。": "Your wallet was locked automatically after inactivity.",
-  "账户序号须在 0–999999 之间。": "The account index must be between 0 and 999999.",
+  "账户序号须在 0–2147483647 之间。": "The account index must be between 0 and 2147483647.",
   "请填写完整助记词。": "Enter the complete recovery phrase.",
   "钱包已在本地打开，5 分钟未操作将自动锁定。": "Wallet opened locally. It will lock after 5 minutes of inactivity.",
   "请先打开与付款地址对应的钱包。": "Open the wallet that matches the sender address first.",

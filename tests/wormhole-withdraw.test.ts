@@ -5,6 +5,7 @@ import { blake2AsHex, encodeAddress } from '@polkadot/util-crypto';
 import { GENESIS, RPC_URLS, addressBytes, compact, concat, fromLittle, hex, little, storagePrefix, unhex } from '../lib/quantus/protocol.ts';
 import { WORMHOLE_CODE_HASH, WORMHOLE_QUANTUM, WormholeRpc, WormholeRpcError, summarizeWormholeSelection, prepareWormholeWithdrawal, bindWormholeProof, parseWormholeExtrinsicPublicInputs, parseWormholeWithdrawalReceipt, submitWormholeWithdrawalOnce, type WormholeRpcLike, type WormholeVerifiedProof, type PreparedWormholeWithdrawal, type WormholeWithdrawalReceipt } from '../lib/wormhole/withdraw.ts';
 import type { WormholeBalanceSnapshot, WormholeUtxo } from '../lib/wormhole/data.ts';
+import { MAX_ACCOUNT_INDEX } from '../lib/quantus/account-index.ts';
 
 const metadata = JSON.parse(fs.readFileSync(new URL('./fixtures/mainnet-metadata.json', import.meta.url), 'utf8')).result;
 const live = JSON.parse(fs.readFileSync(new URL('./fixtures/wormhole-public-merkle.json', import.meta.url), 'utf8'));
@@ -91,6 +92,17 @@ test('prepare binds runtime code, finalized block, original event, Merkle bytes 
   assert.ok(f.calls.some(c => c.method === 'state_getStorage' && c.params[0] === storagePrefix('System', 'Events')));
   assert.ok(!f.calls.some(c => c.method === 'author_submitExtrinsic'));
   assert.ok(Object.isFrozen(p) && Object.isFrozen(p.proofRequest.inputs[0]) && Object.isFrozen(p.selection.selected[0]));
+});
+
+test('prepare accepts the maximum hardened account index and rejects larger or invalid indices before RPC', async () => {
+  const max = fixture();
+  const prepared = await prepareWormholeWithdrawal({ ...max.options, normalAccountIndex: MAX_ACCOUNT_INDEX });
+  assert.equal(prepared.proofRequest.normalAccountIndex, MAX_ACCOUNT_INDEX);
+  for (const normalAccountIndex of [MAX_ACCOUNT_INDEX + 1, -1, 1.5]) {
+    const invalid = fixture();
+    await assert.rejects(prepareWormholeWithdrawal({ ...invalid.options, normalAccountIndex }), /Invalid Wormhole integer/);
+    assert.equal(invalid.calls.length, 0);
+  }
 });
 
 test('changed runtime, wrong snapshot, missing deposit and indexer amount mismatch all stop before proof check', async () => {
@@ -193,6 +205,9 @@ test('public receipt supports metadata-only storage, rejects altered binding, an
   assert.equal(r.phase, 'submitted');
   const { bytes: _bytes, ...publicReceipt } = r;
   assert.deepEqual(parseWormholeWithdrawalReceipt(publicReceipt), publicReceipt);
+  const maximumIndexReceipt = { ...publicReceipt, normalAccountIndex: MAX_ACCOUNT_INDEX };
+  assert.deepEqual(parseWormholeWithdrawalReceipt(maximumIndexReceipt), maximumIndexReceipt);
+  assert.equal(parseWormholeWithdrawalReceipt({ ...publicReceipt, normalAccountIndex: MAX_ACCOUNT_INDEX + 1 }), null);
   const parsed = parseWormholeWithdrawalReceipt({ ...publicReceipt, phrase: 'must-not-persist' }); assert.ok(parsed && !('phrase' in parsed));
   for (const changed of [{ expiresAt: r.proofBlock + 64 }, { netToSelfPlanck: '1' }, { selfAddress: other }, { nullifiers: allNullifiers.slice(1) }, { bytes: r.bytes + '00' }]) assert.equal(parseWormholeWithdrawalReceipt({ ...r, ...changed }), null);
 });

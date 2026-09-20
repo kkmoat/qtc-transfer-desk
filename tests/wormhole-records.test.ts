@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {encodeAddress} from '@polkadot/util-crypto';
 import {saveWithdrawal,readWithdrawalHistory,readWithdrawalPending,assertNoPendingWithdrawal,WORMHOLE_HISTORY_PREFIX,WORMHOLE_PENDING_KEY} from '../lib/wormhole/records.ts';
 import type {WormholeWithdrawalReceipt} from '../lib/wormhole/withdraw.ts';
+import {MAX_ACCOUNT_INDEX} from '../lib/quantus/account-index.ts';
 class MemoryStorage {
   data=new Map<string,string>(); failWrites=false;
   get length(){return this.data.size;}
@@ -19,6 +20,11 @@ test('encrypted history persists whitelisted public metadata, never arbitrary se
  assert.equal(readWithdrawalHistory().records.length,1);assert.equal(readWithdrawalPending()?.hash,example.hash);
  assert(![...local.data.values(),...session.data.values()].join('').includes('must not persist'));
  session.data.clear();assert.equal(readWithdrawalPending(),null);assert.equal(readWithdrawalHistory().records.length,1);
+});
+test('encrypted history preserves the maximum supported normal account index',()=>{
+ setup();const maximum={...example,normalAccountIndex:MAX_ACCOUNT_INDEX};saveWithdrawal(maximum);
+ assert.equal(readWithdrawalHistory().records[0].normalAccountIndex,MAX_ACCOUNT_INDEX);
+ assert.equal(readWithdrawalPending()?.normalAccountIndex,MAX_ACCOUNT_INDEX);
 });
 test('local quota failure leaves no never-broadcast pending receipt',()=>{
  const {local,session}=setup();local.failWrites=true;

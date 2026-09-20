@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowRight, ArrowUpRight, CheckCircle2, LoaderCircle, RefreshCw } from 'lucide-react';
 import { t, useLanguage, locale } from '@/lib/i18n';
 import { formatAmount } from '@/lib/quantus/protocol';
+import { ACCOUNT_INDEX_RANGE_ERROR, parseAccountIndex } from '@/lib/quantus/account-index';
 import type { EncryptedWallet, ProofProgress } from '@/lib/wormhole/client';
 import type { WormholeBalanceSnapshot } from '@/lib/wormhole/data';
 import { prepareWormholeWithdrawal, summarizeWormholeSelection, bindWormholeProof, submitWormholeWithdrawalOnce, WormholeRpc, WORMHOLE_QUANTUM, type PreparedWormholeWithdrawal, type WormholeWithdrawalReceipt } from '@/lib/wormhole/withdraw';
@@ -67,8 +68,8 @@ export function EncryptedWithdrawal({wallet,snapshot,onLock,onBusyChange,onConti
     if(!wallet||operation.current)return;
     const local=wallet;const controller=new AbortController();operation.current=controller;working('derive');invalidate();
     try {
-      if(!/^\d{1,6}$/.test(index)||Number(index)>999999)throw new Error('账户序号须在 0–999999 之间。');
-      const normal=await local.normal(Number(index));
+      let accountIndex:number;try{accountIndex=parseAccountIndex(index);}catch{throw new Error(t(ACCOUNT_INDEX_RANGE_ERROR));}
+      const normal=await local.normal(accountIndex);
       if(!controller.signal.aborted&&walletRef.current===local)setSelf(normal.address);
     }catch(e){if(!controller.signal.aborted)setError(errorMessage(e));}
     finally{if(operation.current===controller){operation.current=null;working('');}}
@@ -77,7 +78,8 @@ export function EncryptedWithdrawal({wallet,snapshot,onLock,onBusyChange,onConti
     if(!wallet||!snapshot||!self||operation.current)return;
     const local=wallet;const controller=new AbortController();operation.current=controller;working('prepare');invalidate();
     try {
-      const p=await prepareWormholeWithdrawal({snapshot,selectedIds:selected,selfAddress:self,normalAccountIndex:Number(index),signal:controller.signal,computeNullifiers:inputs=>local.computeNullifiers(inputs),checkProofRequest:request=>local.check(request)});
+      let accountIndex:number;try{accountIndex=parseAccountIndex(index);}catch{throw new Error(t(ACCOUNT_INDEX_RANGE_ERROR));}
+      const p=await prepareWormholeWithdrawal({snapshot,selectedIds:selected,selfAddress:self,normalAccountIndex:accountIndex,signal:controller.signal,computeNullifiers:inputs=>local.computeNullifiers(inputs),checkProofRequest:request=>local.check(request)});
       if(!controller.signal.aborted&&walletRef.current===local){assertNoPendingWithdrawal({selfAddress:self,nullifiers:p.realNullifiers});setPrepared(p);}
     }catch(e){if(!controller.signal.aborted)setError(errorMessage(e));}
     finally{if(operation.current===controller){operation.current=null;working('');}}
@@ -121,7 +123,7 @@ export function EncryptedWithdrawal({wallet,snapshot,onLock,onBusyChange,onConti
     {error&&<p className="notice error" role="alert">{t(error)}</p>}
     {storageWarning&&<p className="notice error" role="alert">{t(storageWarning)}</p>}
     {wallet&&snapshot?<>
-      <div className="withdraw-destination"><div><label className="field-label" htmlFor="withdraw-index">{t('本人普通账户序号（ML-DSA-65）')}</label><input id="withdraw-index" inputMode="numeric" value={index} disabled={!!busy||!!unresolved} onChange={e=>{setIndex(e.target.value);setSelf('');invalidate();}}/></div><button className="secondary" disabled={!!busy||!!unresolved} onClick={()=>void derive()}>{busy==='derive'?<LoaderCircle className="spin" size={16}/>:null}{t('派生并核对本人地址')}</button></div>
+      <div className="withdraw-destination"><div><label className="field-label" htmlFor="withdraw-index">{t('本人普通账户序号（ML-DSA-65）')}</label><input id="withdraw-index" inputMode="numeric" maxLength={10} value={index} disabled={!!busy||!!unresolved} onChange={e=>{setIndex(e.target.value);setSelf('');invalidate();}}/></div><button className="secondary" disabled={!!busy||!!unresolved} onClick={()=>void derive()}>{busy==='derive'?<LoaderCircle className="spin" size={16}/>:null}{t('派生并核对本人地址')}</button></div>
       {self&&<><label className="field-label">{t('本次到账的普通账户地址')}</label><code className="withdraw-address">{self}</code><p className="micro">{t('地址由同一助记词在本地派生，不可改为他人地址。第一步完成后会锁定钱包；第二步需重新输入助记词打开这个普通账户。')}</p></>}
       <div className="withdraw-selection-title"><h3>{t('选择本次转出的入账记录')}</h3><span>{selected.length} / 7</span></div>
       <p className="micro">{t('每次最多选择 7 笔，所选记录扣费后全部转出，不保留找零；未选记录继续留在加密账户。每笔不足 0.01 QTC 的零头会被舍弃。')}</p>

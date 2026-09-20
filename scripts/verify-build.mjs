@@ -85,6 +85,7 @@ assert(workerHeaders.some(header => header.key === 'Content-Security-Policy' && 
 async function auditFiles(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     assert(!entry.name.startsWith('.'), `Hidden deployment artifact: ${entry.name}`);
+    assert(!/ \d+\./.test(entry.name), `Conflict-copy deployment artifact: ${entry.name}`);
     assert(!/\.(map|pem|key|log)$/i.test(entry.name), `Unexpected deployment artifact: ${entry.name}`);
     assert(!['node_modules', 'api', 'functions', 'server'].includes(entry.name), `Unexpected server artifact: ${entry.name}`);
     if (entry.isDirectory()) await auditFiles(join(directory, entry.name));
@@ -94,4 +95,9 @@ await auditFiles('dist');
 await verifyCrypto('dist');
 assert.equal(await readFile('dist/theme-init.js', 'utf8'), await readFile('public/theme-init.js', 'utf8'));
 assert.equal(await readFile('dist/crypto/worker.js', 'utf8'), await readFile('public/crypto/worker.js', 'utf8'));
+const applicationScripts = (await readdir('dist/assets')).filter(name => name.endsWith('.js'));
+const applicationBundle = (await Promise.all(applicationScripts.map(name => readFile(join('dist/assets', name), 'utf8')))).join('\n');
+assert(applicationBundle.includes('账户序号须在 0–2147483647 之间。'), 'Application must expose the complete safe account-index range');
+assert(!applicationBundle.includes('账户序号须在 0–999999 之间。'), 'Legacy six-digit account-index limit must be removed');
+assert((await readFile('dist/crypto/worker.js', 'utf8')).includes('value < 2147483648'), 'Worker must reject hardened account-index overflow');
 console.log('Static production build verified: external scripts, CSP, isolated Worker policy, crypto checksums and no server/secret artifacts.');
