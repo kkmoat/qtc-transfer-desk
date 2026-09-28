@@ -54,6 +54,12 @@ test('footer contact label is available in Chinese and English', () => {
   assert.equal(translate('联系我们', 'en'), 'Contact us');
 });
 
+test('UniQTC trading link copy is available in Chinese and English', () => {
+  assert.equal(translate('交易QTC，上UniQTC', 'en'), 'Trade QTC on UniQTC');
+  assert.equal(translate('交易QTC，上UniQTC，在新标签页打开', 'en'), 'Trade QTC on UniQTC in a new tab');
+  assert.equal(translate('Trade QTC on UniQTC', 'zh'), '交易QTC，上UniQTC');
+});
+
 test('Binance referral subtitle shows the VPN-free domain in both languages', () => {
   const chinese = '免翻墙网址：www.bi86.com';
   const english = 'VPN-free URL: www.bi86.com';

@@ -1,7 +1,7 @@
 export type DirectoryLink = { label: string; href: string; sponsored?: boolean };
 export type DirectoryCategory = { id: string; title: string; links: readonly DirectoryLink[] };
 
-const OTC_ORDERS_URL = 'https://docs.google.com/spreadsheets/d/1o7pVtQ-YKB0HHFsvPjXqkae1F0yCP4FxaxbNgBkkfU8/edit?usp=sharing';
+export const UNIQTC_URL = 'https://www.uniqtc.xyz/';
 
 export const DIRECTORY_CATEGORIES: readonly DirectoryCategory[] = [
   {
@@ -16,8 +16,8 @@ export const DIRECTORY_CATEGORIES: readonly DirectoryCategory[] = [
   {
     id: 'markets', title: '行情', links: [
       { label: 'QTC总览', href: '/overview/' },
-      { label: '场外OTC订单', href: OTC_ORDERS_URL },
-      { label: 'QTC网站挂单', href: OTC_ORDERS_URL },
+      { label: '场外OTC订单', href: UNIQTC_URL },
+      { label: 'QTC网站挂单', href: UNIQTC_URL },
       { label: 'CoinGecko', href: 'https://www.coingecko.com/en/coins/quantus?chart=type%3Dprice%26mode%3Dline%26timeframe%3Dmax' },
     ],
   },

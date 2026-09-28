@@ -33,6 +33,10 @@ for (const view of VIEWS) {
   assert(html.includes('href="https://www.bi86.com/go/8.html"'), 'Binance referral destination must remain unchanged');
   assert.equal([...html.matchAll(/href="https:\/\/t\.me\/QTC123COM"/g)].length, view === 'directory' ? 2 : 1, 'Expected the current Chinese Telegram destination');
   assert(!html.includes('https://t.me/QuantusCN'), 'Legacy Chinese Telegram destination must be removed');
+  assert.equal([...html.matchAll(/href="https:\/\/www\.uniqtc\.xyz\/"/g)].length, view === 'directory' ? 3 : 1, 'Expected the current UniQTC destination');
+  assert(html.includes('>交易QTC，上UniQTC<'), 'Expected the current UniQTC heading-link label');
+  assert(!html.includes('场外实时OTC成交'), 'Legacy OTC heading-link label must be removed');
+  assert(!html.includes('docs.google.com/spreadsheets/d/1o7pVtQ-YKB0HHFsvPjXqkae1F0yCP4FxaxbNgBkkfU8'), 'Legacy OTC spreadsheet destination must be removed');
   const footer = html.match(/<footer>[\s\S]*?<\/footer>/)?.[0];
   assert(footer, 'Expected one footer');
   assert.equal([...footer.matchAll(/href="https:\/\/x\.com\/QTC123_COM"/g)].length, 1, 'Expected one footer contact link');
@@ -99,5 +103,9 @@ const applicationScripts = (await readdir('dist/assets')).filter(name => name.en
 const applicationBundle = (await Promise.all(applicationScripts.map(name => readFile(join('dist/assets', name), 'utf8')))).join('\n');
 assert(applicationBundle.includes('账户序号须在 0–2147483647 之间。'), 'Application must expose the complete safe account-index range');
 assert(!applicationBundle.includes('账户序号须在 0–999999 之间。'), 'Legacy six-digit account-index limit must be removed');
+assert(applicationBundle.includes('交易QTC，上UniQTC'), 'Application must expose the current UniQTC heading-link label');
+assert(applicationBundle.includes('https://www.uniqtc.xyz/'), 'Application must expose the current UniQTC destination');
+assert(!applicationBundle.includes('场外实时OTC成交'), 'Legacy OTC heading-link label must be removed from the application');
+assert(!applicationBundle.includes('docs.google.com/spreadsheets/d/1o7pVtQ-YKB0HHFsvPjXqkae1F0yCP4FxaxbNgBkkfU8'), 'Legacy OTC spreadsheet destination must be removed from the application');
 assert((await readFile('dist/crypto/worker.js', 'utf8')).includes('value < 2147483648'), 'Worker must reject hardened account-index overflow');
 console.log('Static production build verified: external scripts, CSP, isolated Worker policy, crypto checksums and no server/secret artifacts.');
