@@ -81,6 +81,6 @@ export function QtcOverview({active}:{active:boolean}){
    <p className="overview-warning">{t('市场深度较小，买卖价差和滑点可能较大。最近成交价仅供参考，不代表可按此价格买卖，也不等同于美元报价。')}</p>
    <div className="overview-market-footer"><div aria-live="polite">{priceError&&<p className="overview-feed-error">{t(priceError)}</p>}{price?<p>{t('报价获取时间：{0}；不是最近成交发生时间。',when(price.fetchedAt))}</p>:<p>{loading&&!priceError?t('正在连接 SafeTrade 公开行情…'):t('暂未取得可验证报价。')}</p>}</div></div>
   </article>
-  <p className="overview-disclaimer">{t('本总览无需打开钱包，不发送钱包资料。供应来自官方主网，行情来自 SafeTrade 公开推送；接口受限时不显示猜测价格。')}</p>
+  <p className="overview-disclaimer">{t('本总览无需打开钱包，不发送钱包资料。供应来自官方主网，行情来自 SafeTrade 公开数据；接口受限时不显示猜测价格。')}</p>
  </section>;
 }

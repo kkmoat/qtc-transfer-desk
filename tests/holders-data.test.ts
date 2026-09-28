@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { CEX_HOLDER_ADDRESS, fetchHoldersPage, fetchHoldersSummary, formatPlanckQtc, HOLDERS_API_URL, HOLDERS_PAGE_SIZE, knownHolderRole, parseHoldersResponse, parseHoldersSummary, PROJECT_HOLDER_ADDRESS, QUANPOOL_HOLDER_ADDRESS } from '../lib/holders.ts';
+import { encodeAddress } from '@polkadot/util-crypto';
+import { CEX_HOLDER_ADDRESS, fetchHoldersPage, fetchHoldersSummary, formatPlanckQtc, HOLDERS_API_URL, HOLDERS_SUMMARY_API_URL, HOLDERS_SUMMARY_LEADER_LIMIT, knownHolderRole, parseHoldersResponse, parseHoldersSummary, PROJECT_HOLDER_ADDRESS, QUANPOOL_HOLDER_ADDRESS } from '../lib/holders.ts';
 
 const rows = [
   { id: 'qzmviwoPJR19XovVwUYUoUKb2MoBygYgwYAevj5Br8JeunxW7', free: '5669940001000000000', frozen: '0', reserved: '0' },
@@ -8,15 +9,21 @@ const rows = [
 ];
 const payload = { data: { accounts: rows, meta: { totalCount: 2358 } } };
 const summaryFetchedAt = Date.UTC(2026, 8, 13, 5);
+const summaryLeaders = [
+  rows[0],
+  rows[1],
+  { id: CEX_HOLDER_ADDRESS, free: '3195335355532269', frozen: '0', reserved: '0' },
+  ...Array.from({ length: HOLDERS_SUMMARY_LEADER_LIMIT - 3 }, (_, index) => ({
+    id: encodeAddress(new Uint8Array(32).fill(index + 31), 189),
+    free: String(3_000_000_000_000_000n - BigInt(index) * 10_000_000_000_000n),
+    frozen: '0', reserved: '0',
+  })),
+];
 const summaryPayload = { data: {
   aggregate: { aggregate: { count: 2358, sum: { free: '5682404387555532269', reserved: '5' } } },
   meta: { total_accounts: 2358, block_height: 35648, finalized_block_height: 35548 },
   latest: [{ height: 35648, timestamp: new Date(summaryFetchedAt - 30_000).toISOString() }],
-  leaders: [
-    rows[0],
-    rows[1],
-    { id: CEX_HOLDER_ADDRESS, free: '3195335355532269', frozen: '0', reserved: '0' },
-  ],
+  leaders: summaryLeaders,
   project: { ...rows[0], last_updated: 0 },
 } };
 
@@ -40,7 +47,13 @@ test('holder response fails closed on malformed, impossible or unsorted data', (
   for (const value of invalid) assert.throws(() => parseHoldersResponse(value, 1));
 });
 
-test('holder fetch uses only the fixed official endpoint and a bounded public query', async () => {
+test('equal holder balances use the address as a stable pagination tie-breaker', () => {
+  const tied = rows.map(row => ({ ...row, free: '8000', frozen: '0' })).sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0);
+  assert.doesNotThrow(() => parseHoldersResponse({ data: { accounts: tied, meta: { totalCount: 2 } } }, 1));
+  assert.throws(() => parseHoldersResponse({ data: { accounts: [...tied].reverse(), meta: { totalCount: 2 } } }, 1));
+});
+
+test('holder fetch uses the fixed same-origin endpoint for the requested page', async () => {
   let request: { input: string; init?: RequestInit } | undefined;
   const fetcher: typeof fetch = async (input, init) => {
     request = { input: String(input), init };
@@ -48,15 +61,14 @@ test('holder fetch uses only the fixed official endpoint and a bounded public qu
   };
   const result = await fetchHoldersPage(2, new AbortController().signal, fetcher);
   assert.equal(result.page, 2);
-  assert.equal(request?.input, HOLDERS_API_URL);
-  assert.equal(request?.init?.method, 'POST');
+  assert.equal(request?.input, `${HOLDERS_API_URL}?page=2`);
+  assert.equal(request?.init?.method, 'GET');
   assert.equal(request?.init?.credentials, 'omit');
   assert.equal(request?.init?.cache, 'no-store');
   assert.equal(request?.init?.redirect, 'error');
   assert.equal(request?.init?.referrerPolicy, 'no-referrer');
-  const body = JSON.parse(String(request?.init?.body));
-  assert.deepEqual(body.variables, { limit: HOLDERS_PAGE_SIZE, offset: HOLDERS_PAGE_SIZE, orderBy: { free: 'desc' } });
-  assert.match(body.query, /chain_stats_by_pk/);
+  assert.equal(request?.init?.body, undefined);
+  assert.deepEqual(request?.init?.headers, { Accept: 'application/json' });
 });
 
 test('holder summary uses the aggregate address balances and subtracts the live project balance', () => {
@@ -69,7 +81,7 @@ test('holder summary uses the aggregate address balances and subtracts the live 
   assert.equal(snapshot.finalizedBlockHeight, 35548);
   assert.equal(snapshot.projectLastUpdated, 0);
   assert.equal(snapshot.sourceTime, summaryFetchedAt - 30_000);
-  assert.equal(snapshot.topAccounts.length, 3);
+  assert.equal(snapshot.topAccounts.length, HOLDERS_SUMMARY_LEADER_LIMIT);
   assert.equal(knownHolderRole(PROJECT_HOLDER_ADDRESS), 'project');
   assert.equal(knownHolderRole(QUANPOOL_HOLDER_ADDRESS), 'quanpool');
   assert.equal(knownHolderRole(CEX_HOLDER_ADDRESS), 'cex');
@@ -85,7 +97,7 @@ test('holder summary rejects missing project data and impossible aggregates', ()
   assert.throws(() => parseHoldersSummary({ data: { ...summaryPayload.data, latest: [{ ...summaryPayload.data.latest[0], timestamp: new Date(summaryFetchedAt - 5 * 60_000 - 1).toISOString() }] } }, summaryFetchedAt));
 });
 
-test('holder summary fetch sends one bounded aggregate query with the pinned project address', async () => {
+test('holder summary fetch uses the fixed same-origin aggregate endpoint', async () => {
   let request: { input: string; init?: RequestInit } | undefined;
   const fetcher: typeof fetch = async (input, init) => {
     request = { input: String(input), init };
@@ -93,9 +105,9 @@ test('holder summary fetch sends one bounded aggregate query with the pinned pro
   };
   const result = await fetchHoldersSummary(new AbortController().signal, fetcher);
   assert.equal(result.totalCount, 2358);
-  assert.equal(request?.input, HOLDERS_API_URL);
-  const body = JSON.parse(String(request?.init?.body));
-  assert.deepEqual(body.variables, { project: PROJECT_HOLDER_ADDRESS });
-  assert.match(body.query, /account_aggregate/);
-  assert.match(body.query, /account_by_pk/);
+  assert.equal(request?.input, HOLDERS_SUMMARY_API_URL);
+  assert.equal(request?.init?.method, 'GET');
+  assert.equal(request?.init?.credentials, 'omit');
+  assert.equal(request?.init?.body, undefined);
+  assert.deepEqual(request?.init?.headers, { Accept: 'application/json' });
 });

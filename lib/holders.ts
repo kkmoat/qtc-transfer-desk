@@ -1,53 +1,13 @@
 import { addressBytes } from './quantus/protocol.ts';
 
-export const HOLDERS_API_URL = 'https://sqm.quantus.com/v1/graphql';
+export const HOLDERS_API_URL = '/api/quantus/holders';
+export const HOLDERS_SUMMARY_API_URL = '/api/quantus/summary';
 export const HOLDERS_EXPLORER_URL = 'https://explorer.quantus.com/accounts?order_by=free%3Adesc';
 export const HOLDERS_PAGE_SIZE = 25;
+export const HOLDERS_SUMMARY_LEADER_LIMIT = 25;
 export const PROJECT_HOLDER_ADDRESS = 'qzmviwoPJR19XovVwUYUoUKb2MoBygYgwYAevj5Br8JeunxW7';
 export const QUANPOOL_HOLDER_ADDRESS = 'qzowWAgbzjc2XfHY4vyEo2eVLKbknTESUFoXnisQuUh1x1koo';
 export const CEX_HOLDER_ADDRESS = 'qzomrwjTJf49jqYsyBpEZpVdEcAN3A4fdNJAV1xV9SA4Tm8rF';
-export const HOLDERS_QUERY = `query GetAccounts($limit: Int, $offset: Int, $orderBy: [account_order_by!]) {
-  accounts: account(limit: $limit, offset: $offset, order_by: $orderBy) {
-    id
-    free
-    frozen
-    reserved
-  }
-  meta: chain_stats_by_pk(id: "global") {
-    totalCount: total_accounts
-  }
-}`;
-export const HOLDERS_SUMMARY_QUERY = `query GetAccountSummary($project: String!) {
-  aggregate: account_aggregate {
-    aggregate {
-      count
-      sum { free reserved }
-    }
-  }
-  meta: chain_stats_by_pk(id: "global") {
-    total_accounts
-    block_height
-    finalized_block_height
-  }
-  latest: block(limit: 1, order_by: {height: desc}) {
-    height
-    timestamp
-  }
-  leaders: account(limit: 3, order_by: {free: desc}) {
-    id
-    free
-    frozen
-    reserved
-  }
-  project: account_by_pk(id: $project) {
-    id
-    free
-    frozen
-    reserved
-    last_updated
-  }
-}`;
-
 const PLANCKS_PER_QTC = 1_000_000_000_000n;
 const MAX_SUPPLY_PLANCK = 21_000_000n * PLANCKS_PER_QTC;
 const MAX_RESPONSE_BYTES = 300_000;
@@ -101,7 +61,10 @@ const account = (value: unknown): HolderAccount => {
   return result;
 };
 const ordered = (accounts: readonly HolderAccount[]) => {
-  for (let index = 1; index < accounts.length; index++) if (accounts[index - 1].free < accounts[index].free) throw invalid();
+  for (let index = 1; index < accounts.length; index++) {
+    const previous = accounts[index - 1], current = accounts[index];
+    if (previous.free < current.free || (previous.free === current.free && previous.address >= current.address)) throw invalid();
+  }
 };
 
 export function parseHoldersResponse(value: unknown, page: number, fetchedAt = Date.now()): HoldersSnapshot {
@@ -139,7 +102,7 @@ export function parseHoldersSummary(value: unknown, fetchedAt = Date.now()): Hol
   const free = balance(sums.free), reserved = balance(sums.reserved);
   const totalBalancePlanck = free + reserved;
   if (totalBalancePlanck <= 0n || totalBalancePlanck > MAX_SUPPLY_PLANCK) throw invalid();
-  if (!Array.isArray(data.leaders) || data.leaders.length !== Math.min(3, totalCount)) throw invalid();
+  if (!Array.isArray(data.leaders) || data.leaders.length !== Math.min(HOLDERS_SUMMARY_LEADER_LIMIT, totalCount)) throw invalid();
   const topAccounts = data.leaders.map(account);
   ordered(topAccounts);
   const projectRow = object(data.project);
@@ -167,10 +130,9 @@ export async function fetchHoldersPage(page: number, signal: AbortSignal, fetche
   if (!Number.isSafeInteger(page) || page < 1) throw invalid();
   const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(15_000)]);
   try {
-    const response = await fetcher(HOLDERS_API_URL, {
-      method: 'POST', mode: 'cors', credentials: 'omit', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer', signal: requestSignal,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: HOLDERS_QUERY, variables: { limit: HOLDERS_PAGE_SIZE, offset: (page - 1) * HOLDERS_PAGE_SIZE, orderBy: { free: 'desc' } } }),
+    const response = await fetcher(`${HOLDERS_API_URL}?page=${page}`, {
+      method: 'GET', credentials: 'omit', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer', signal: requestSignal,
+      headers: { Accept: 'application/json' },
     });
     if (!response.ok) throw invalid();
     const text = await response.text();
@@ -185,10 +147,9 @@ export async function fetchHoldersPage(page: number, signal: AbortSignal, fetche
 export async function fetchHoldersSummary(signal: AbortSignal, fetcher: typeof fetch = (input, init) => fetch(input, init)): Promise<HoldersSummarySnapshot> {
   const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(15_000)]);
   try {
-    const response = await fetcher(HOLDERS_API_URL, {
-      method: 'POST', mode: 'cors', credentials: 'omit', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer', signal: requestSignal,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: HOLDERS_SUMMARY_QUERY, variables: { project: PROJECT_HOLDER_ADDRESS } }),
+    const response = await fetcher(HOLDERS_SUMMARY_API_URL, {
+      method: 'GET', credentials: 'omit', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer', signal: requestSignal,
+      headers: { Accept: 'application/json' },
     });
     if (!response.ok) throw invalid();
     const text = await response.text();

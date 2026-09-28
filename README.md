@@ -238,15 +238,15 @@ tests/                  本地测试、公开测试向量及主网元数据
 - 最大供应量为 21,000,000 QTC，依据 [Quantus 官方白皮书 v0.4.1](https://www.quantus.com/whitepaper/v0.4.1/)。
 - 供应直接读取官方主网 `Balances.TotalIssuance`（u128 小端，12 位小数），固定最终确认区块，验证主网 genesis。创世链上发行量为 5,670,000.001 QTC（含初始化余额）。
 - “已挖出 · 净新增”是当前净发行量减去创世发行量，受销毁影响，既不是累计新铸量、累计矿工奖励，也不是流通量。加密账户资金已包含在总发行口径中，不另行加总。
-- “当前流通量（地址余额合计）”直接使用官方区块浏览器 GraphQL 的 `account_aggregate`，合计全部账户的 `free + reserved`。`frozen` 是 `free` 中受限的部分，不重复相加。该值包含项目方、矿池、交易所、系统和个人账户，不是独立机构认证的自由流通量，也不是交易所可售数量。
+- “当前流通量（地址余额合计）”通过本站同源只读接口取得官方区块浏览器 GraphQL 的 `account_aggregate`，合计全部账户的 `free + reserved`。服务端仅发送写死的分页与汇总查询，不接受任意 GraphQL 内容。`frozen` 是 `free` 中受限的部分，不重复相加。该值包含项目方、矿池、交易所、系统和个人账户，不是独立机构认证的自由流通量，也不是交易所可售数量。
 - 项目方 Vesting 锁仓资金池使用固定公开地址并实时读取余额。扣除项目方后的流通量 = 地址余额合计 − 该资金池余额；对应 MC = 该流通量 × 最近成交价；对应 FDV =（21,000,000 − 该资金池余额）× 最近成交价。常规 FDV 仍为 21,000,000 × 最近成交价。各项均以 USDT 计价，用整数精度计算后四舍五入到分。
 - 账户榜前三名标明其已知性质：第一名为项目方 Vesting 锁仓资金池并按非流通处理；第二名为 Quanpool 矿池地址，由多名矿工组成；第三名为 CEX 地址，由交易所用户组成。地址余额不能解释为一个自然人的持仓。
-- [QUANTUS/USDT](https://safetrade.com/exchange/QUANTUS-USDT?type=basic) 是 Quantus 在 SafeTrade 的当前交易对，替代原 QUAN/USDT；**不使用 QTC/USDT（另一项目）**。行情使用 [SafeTrade 官方客户端](https://github.com/safetrade-exchange/example-client) 所示 `global.tickers` 公开推送，只解析 `quantususdt`。价格和成交额以 USDT 计，成交量以 QUANTUS 计。
+- [QUANTUS/USDT](https://safetrade.com/exchange/QUANTUS-USDT?type=basic) 是 Quantus 在 SafeTrade 的当前交易对，替代原 QUAN/USDT；**不使用 QTC/USDT（另一项目）**。香港生产站通过本站固定的同源只读路由读取 SafeTrade 的 `quantususdt` REST ticker；该路由不接受市场或目标网址参数。价格和成交额以 USDT 计，成交量以 QUANTUS 计；响应时间超过五分钟、格式异常或接口不可用时不显示猜测值。
 - 行情卡显著提示“市场深度较小”，展示的是最近成交价，不承诺可成交价格，不把 USDT 直接当 USD。报价获取时间不是实际成交时间。
 - 供应、地址聚合与行情数据各自更新；每分钟刷新，仅页面可见且总览打开时请求。读取失败保留明确标记的上次数据，没有数据时显示不可用；不内置演示价格或从其他币种补值。
-- 公开行情使用指定的 WebSocket 路径并受生产 CSP 限制。部分网络或交易所访问限制仍可能导致报价不可用，此时提示稍后刷新。总览不提供跳转交易所的按钮。
+- 公开行情通过本站同源路由读取并受生产 CSP 限制。交易所不可用时提示稍后刷新。Vercel 纯静态备用部署没有私有同源数据路由，因此持币数据与行情会安全地显示为不可用。总览不提供跳转交易所的按钮。
 
-总览完全在浏览器执行，不新增后端、API 密钥或远程 JavaScript。只在文档 CSP 增加指定的 SafeTrade 公开 WebSocket 路径；签名 Worker 的 CSP、加密组件与转账费率不变。
+供应仍由浏览器从固定官方主网 RPC 只读获取。持币分页、汇总与 SafeTrade 行情通过本站三个固定同源 GET 路由读取，以兼容官方来源限制；服务端不接受任意 GraphQL、目标地址、市场或项目地址。全程不使用 API 密钥或远程 JavaScript；签名 Worker 的 CSP、加密组件与转账费率不变。
 
 ## 限量福袋与管理后台
 
