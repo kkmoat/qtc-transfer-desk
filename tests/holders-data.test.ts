@@ -47,10 +47,14 @@ test('holder response fails closed on malformed, impossible or unsorted data', (
   for (const value of invalid) assert.throws(() => parseHoldersResponse(value, 1));
 });
 
-test('equal holder balances use the address as a stable pagination tie-breaker', () => {
-  const tied = rows.map(row => ({ ...row, free: '8000', frozen: '0' })).sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0);
+test('equal holder balances accept the upstream database collation but still reject duplicate addresses', () => {
+  const tied = [
+    { id: 'qzqCboqoTJKGGxDLLRXQ6essyWyj4Pk68krBHyjjD8EGBFKNC', free: '0', frozen: '0', reserved: '0' },
+    { id: 'qzqCCKayrsGxYssYuRX9vepVXCBSD7kSH59HapVEpbchv9Bsf', free: '0', frozen: '0', reserved: '0' },
+  ];
+  assert.equal(tied[0].id > tied[1].id, true, 'fixture must differ from JavaScript code-point order');
   assert.doesNotThrow(() => parseHoldersResponse({ data: { accounts: tied, meta: { totalCount: 2 } } }, 1));
-  assert.throws(() => parseHoldersResponse({ data: { accounts: [...tied].reverse(), meta: { totalCount: 2 } } }, 1));
+  assert.throws(() => parseHoldersResponse({ data: { accounts: [tied[0], tied[0]], meta: { totalCount: 2 } } }, 1));
 });
 
 test('holder fetch uses the fixed same-origin endpoint for the requested page', async () => {

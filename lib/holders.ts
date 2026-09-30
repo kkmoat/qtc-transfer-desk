@@ -61,9 +61,11 @@ const account = (value: unknown): HolderAccount => {
   return result;
 };
 const ordered = (accounts: readonly HolderAccount[]) => {
-  for (let index = 1; index < accounts.length; index++) {
-    const previous = accounts[index - 1], current = accounts[index];
-    if (previous.free < current.free || (previous.free === current.free && previous.address >= current.address)) throw invalid();
+  const addresses = new Set<string>();
+  for (let index = 0; index < accounts.length; index++) {
+    const current = accounts[index];
+    if (addresses.has(current.address) || index > 0 && accounts[index - 1].free < current.free) throw invalid();
+    addresses.add(current.address);
   }
 };
 
