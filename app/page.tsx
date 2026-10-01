@@ -1,4 +1,3 @@
-import { LuckyBag } from '@/components/lucky-bag';
 import { EncryptedAccount } from '@/components/encrypted-account';
 import './encrypted.css';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -184,7 +183,6 @@ export default function Home({initialView='directory'}:{initialView?:DeskView}={
  {renderView('holders')&&<div className="desk-view" hidden={view!=='holders'}><QtcHolders active={view==='holders'}/></div>}
  {renderView('pool')&&<div className="desk-view" hidden={view!=='pool'}><PoolHashrate active={view==='pool'}/></div>}
 <footer><span>{t("独立社区工具")}</span><div className="footer-links"><a href="https://github.com/kkmoat/qtc-transfer-desk" target="_blank" rel="noopener noreferrer">{t("GitHub 开源")}</a><a href="/source/quantus-browser-crypto-source.zip" download>{t("签名组件源码")}</a><a href="/source/LICENSE.txt" target="_blank">GPL-3.0</a><a href="https://x.com/QTC123_COM" target="_blank" rel="noopener noreferrer">{t("联系我们")}<ArrowUpRight size={14} aria-hidden="true"/></a></div></footer></main>
- <LuckyBag active/>
  <Dialog open={historyDetailHash!==null} onOpenChange={open=>{if(!open)closeHistory();}}><DialogContent className="wallet-dialog history-dialog"><DialogHeader><DialogTitle>{t("转账记录详情")}</DialogTitle><DialogDescription>{t("这是本地保存的交易信息。重新查询只核对链上结果，不会再次付款。")}</DialogDescription></DialogHeader>
  {historyDetail?<><div className="receipt-amount">{formatAmount(BigInt(historyDetail.amount))} <span>QTC</span></div><p className="history-detail-state" role="status">{historyTracking===historyDetail.hash?t("正在查询链上结果…"):t("上次查询结果：{0}", receiptStatus(historyDetail))}</p><p className="micro">{t(historyDetail.message)}</p>
  <dl><dt>{t("发起时间（本机时区）")}</dt><dd>{historyDate(historyDetail.createdAt)}</dd><dt>{t("付款地址")}</dt><dd>{historyDetail.from}</dd><dt>{t("收款地址")}</dt><dd>{historyDetail.to}</dd><dt>{t("交易哈希")}</dt><dd>{historyDetail.hash}</dd>

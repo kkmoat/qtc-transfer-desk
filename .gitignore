@@ -17,7 +17,7 @@ crypto/pkg-web/
 
 crypto/pkg-node/
 
-# Private lucky-bag runtime state
+# Local private-service runtime state
 __pycache__/
 *.pyc
 *.sqlite3
@@ -25,9 +25,9 @@ __pycache__/
 .venv/
 server/data/
 
-# Private campaign administration and server sources are deployed separately.
+# Private server sources are deployed separately.
 /admin/
 /server/
-/deploy/lucky-bag/
+/deploy/
 /server-api-contract.md
-/scripts/preview-lucky-bag.mjs
+/scripts/preview-private-*.mjs

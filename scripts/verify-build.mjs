@@ -101,6 +101,11 @@ assert.equal(await readFile('dist/theme-init.js', 'utf8'), await readFile('publi
 assert.equal(await readFile('dist/crypto/worker.js', 'utf8'), await readFile('public/crypto/worker.js', 'utf8'));
 const applicationScripts = (await readdir('dist/assets')).filter(name => name.endsWith('.js'));
 const applicationBundle = (await Promise.all(applicationScripts.map(name => readFile(join('dist/assets', name), 'utf8')))).join('\n');
+assert(!applicationBundle.includes('/api/lucky-bag/'), 'Removed lucky-bag API must not remain in the application');
+assert(!applicationBundle.includes('kkmoat-wechat'), 'Removed lucky-bag QR must not remain in the application');
+assert(!applicationBundle.includes('Quantus 幸运福袋'), 'Removed lucky-bag copy must not remain in the application');
+await assert.rejects(readFile('dist/images/kkmoat-wechat.png'), { code: 'ENOENT' });
+await assert.rejects(readFile('dist/images/quantus-wechat.jpg'), { code: 'ENOENT' });
 assert(applicationBundle.includes('账户序号须在 0–2147483647 之间。'), 'Application must expose the complete safe account-index range');
 assert(!applicationBundle.includes('账户序号须在 0–999999 之间。'), 'Legacy six-digit account-index limit must be removed');
 assert(applicationBundle.includes('交易QTC，上UniQTC'), 'Application must expose the current UniQTC heading-link label');
