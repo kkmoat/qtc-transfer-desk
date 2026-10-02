@@ -42,6 +42,11 @@ html[data-theme=light] :is(.withdraw-review,.withdraw-receipt){background:#fff8f
 html[data-theme=light] .secondary{border-color:var(--input)!important;color:var(--light-text)!important}
 html[data-theme=light] .secondary:hover:not(:disabled){background:#edf2f7!important}
 html[data-theme=light] :is(.overview-refresh,.mining-refresh){background:#fff;color:var(--light-text);border-color:var(--input)}
+html[data-theme=light] .headline-price{background:#fff;color:var(--light-text);border-color:var(--border)}
+html[data-theme=light] :is(.headline-price-label,.headline-price small,.headline-change){color:var(--light-muted)}
+html[data-theme=light] .headline-change{border-color:var(--border)}
+html[data-theme=light] .headline-change.positive{color:#157348}
+html[data-theme=light] .headline-change.negative{color:#b0342b}
 
 /* Body text remains legible on white and pale tinted panels. */
 html[data-theme=light] :is(.network,.quiet-link,.session-label,.balance-label,.subtle,.account-detail,.privacy-note,.transfer-heading p,.steps,.field-help,.amount-label>span,.fee-row,.form-footnote,footer,.micro,.node-select,.receipt-amount>span,dt,.service-fee-summary p,.fee-recipient-label,.history-heading>span,.history-help,.history-empty,.history-summary,.directory-caption,.directory-caption>span,.intro-summary,.intro-facts dt,.intro-facts dd small,.intro-section-heading p,.intro-feature p,.intro-resource small,.intro-source-note,.encrypted-intro p,.encrypted-consent,.encrypted-stats dt,.encrypted-addresses span,.encrypted-details,.withdraw-heading p,.withdraw-input small,.withdraw-history-row small,.mining-subtitle,.mining-source-bar,.mining-source-bar small,.mining-field,.mining-input-unit>span,.mining-device-title,.mining-hint,.mining-hint>span,.mining-total>span,.mining-cost>span,.mining-result-stats span,.mining-result-stats strong small,.mining-periods strong small,.mining-periods span,.mining-assumption,.mining-network dt,.mining-method,.mining-privacy,.overview-toolbar,.overview-label,.overview-value small,.overview-help,.overview-foot,.overview-data-note,.overview-price small,.overview-market-stats dt,.overview-market-stats small,.overview-up span,.overview-down span,.overview-market-footer p,.overview-disclaimer,.language-switcher){color:var(--light-muted)}

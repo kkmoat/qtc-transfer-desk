@@ -19,6 +19,8 @@ for (const view of VIEWS) {
   }
   assert(!/\bon\w+\s*=/i.test(html), 'Inline event handlers are not allowed');
   assert.equal([...html.matchAll(/<h1[ >]/g)].length, 1, 'Each page needs one visible main heading');
+  assert.equal([...html.matchAll(/class="headline-price"/g)].length, 1, 'Each page needs one live QTC price beside its heading');
+  assert(html.includes('class="page-title-line"'), 'Each page heading must share the live-price title row');
   assert.equal([...html.matchAll(/class="desk-view"/g)].length, 1, 'Only the active view should be prerendered');
   assert(html.includes('<title>' + pageMetadata(view).title + '</title>'));
   assert.equal([...html.matchAll(/rel="canonical"/g)].length, 1);

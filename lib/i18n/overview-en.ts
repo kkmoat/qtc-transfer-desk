@@ -72,4 +72,8 @@ export const OVERVIEW_EN: Readonly<Record<string,string>> = {
  '暂时无法读取官方主网供应数据，请稍后刷新。':'Cannot read the official mainnet supply. Please refresh later.',
  'SafeTrade 行情暂不可用，请稍后刷新。':'SafeTrade prices are unavailable. Please refresh later.',
  'SafeTrade 报价格式异常。':'The SafeTrade quote format is invalid.',
+ 'QTC 实时':'QTC live',
+ 'QTC 实时价格 {0} USDT，24 小时涨幅 {1}':'Live QTC price: {0} USDT; 24-hour change: {1}',
+ 'QTC 实时价格暂不可用':'The live QTC price is temporarily unavailable',
+ '正在读取 QTC 实时价格':'Loading the live QTC price',
 };

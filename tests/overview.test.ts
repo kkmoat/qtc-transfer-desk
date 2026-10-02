@@ -38,6 +38,9 @@ test('supply failover stays on official endpoints and errors never become zero s
 });
 test('only the current Quantus QUANTUS ticker shape is accepted and quote/base volume units are not swapped',()=>{
  const p=parsePriceResponse(sample(),now);assert.equal(p.last,'50.00');assert.equal(p.volumeUsdt,'482.35');assert.equal(p.amountQuantus,'14.36');assert.equal(p.change,66.67);assert.equal(p.fetchedAt,now);
+ const falling=sample();falling.ticker.price_change_percent='-12.50%';assert.equal(parsePriceResponse(falling,now).change,-12.5);
+ const unchanged=sample();unchanged.ticker.price_change_percent='0%';assert.equal(parsePriceResponse(unchanged,now).change,0);
+ const invalidChange=sample();invalidChange.ticker.price_change_percent='not available';assert.equal(parsePriceResponse(invalidChange,now).change,null);
  for(const last of ['0','NaN','-1','1e8','<script>','Infinity']){const s=sample();s.ticker.last=last;assert.throws(()=>parsePriceResponse(s,now));}
  for(const bad of [null,[],{},'ping'])assert.throws(()=>parsePriceResponse(bad,now));
  const numeric=sample();Object.assign(numeric.ticker,{last:50,volume:0});assert.equal(parsePriceResponse(numeric,now).last,'50');assert.equal(parsePriceResponse(numeric,now).volumeUsdt,'0');
